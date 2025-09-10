@@ -18,14 +18,14 @@ echo -e "${GREEN}🚀 Building Tsunami ZK Circuits...${NC}"
 # Create directories
 mkdir -p $BUILD_DIR $SETUP_DIR
 
-# Download powers of tau if not exists (for hackathon, use existing ceremony)
-PTAU_FILE="$SETUP_DIR/powersOfTau28_hez_final_15.ptau"
+# Use our locally generated powers of tau file
+PTAU_FILE="$SETUP_DIR/pot15_final.ptau"
 if [ ! -f "$PTAU_FILE" ]; then
-    echo -e "${YELLOW}📥 Downloading powers of tau ceremony...${NC}"
-    curl -L https://hermez.s3-eu-west-1.amazonaws.com/powersOfTau28_hez_final_15.ptau \
-        -o $PTAU_FILE
-    echo -e "${GREEN}✅ Downloaded powers of tau${NC}"
+    echo -e "${RED}❌ Powers of tau file not found at $PTAU_FILE${NC}"
+    echo -e "${YELLOW}Please run the powers of tau ceremony first${NC}"
+    exit 1
 fi
+echo -e "${GREEN}✅ Using powers of tau: $PTAU_FILE${NC}"
 
 # Function to build a single circuit
 build_circuit() {

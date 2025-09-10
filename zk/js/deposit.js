@@ -8,7 +8,7 @@ const path = require("path");
  * Handles the client-side proof generation for private deposits
  */
 class DepositProver {
-    constructor(circuitPath = "../build") {
+    constructor(circuitPath = "./build") {
         this.wasmPath = path.join(circuitPath, "deposit_js", "deposit.wasm");
         this.zkeyPath = path.join(circuitPath, "deposit.zkey");
         this.vkeyPath = path.join(circuitPath, "deposit.vkey.json");
