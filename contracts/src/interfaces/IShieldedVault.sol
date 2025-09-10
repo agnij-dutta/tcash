@@ -15,7 +15,8 @@ interface IShieldedVault {
         address token,
         uint256 amount,
         bytes32 commitment,
-        uint256 denominationId
+        uint256 denominationId,
+        bytes calldata proof
     ) external;
 
     function withdraw(

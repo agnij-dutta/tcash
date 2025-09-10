@@ -5,16 +5,13 @@ import {IShieldedVault} from "./interfaces/IShieldedVault.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {IVerifier} from "./interfaces/IVerifier.sol";
 import {IComplianceOracle} from "./interfaces/IComplianceOracle.sol";
+import {IncrementalMerkleTree} from "./libraries/IncrementalMerkleTree.sol";
 
-contract ShieldedVault is IShieldedVault {
+contract ShieldedVault is IShieldedVault, IncrementalMerkleTree {
     address public owner;
     address public router; // allowed to call executeSpend
     IComplianceOracle public complianceOracle;
-
-    // Merkle roots ring buffer
-    uint256 public constant ROOT_HISTORY_SIZE = 256;
-    bytes32[ROOT_HISTORY_SIZE] public recentRoots;
-    uint32 public currentRootIndex;
+    IVerifier public depositVerifier; // Verifies deposit proofs
 
     mapping(bytes32 => bool) public nullifierUsed;
     mapping(address => bool) public supportedToken; // MVP: allowlist tokens
@@ -23,9 +20,10 @@ contract ShieldedVault is IShieldedVault {
     error NotOwner();
     error NotRouter();
 
-    constructor(address complianceOracle_) {
+    constructor(address complianceOracle_, address depositVerifier_) {
         owner = msg.sender;
         complianceOracle = IComplianceOracle(complianceOracle_);
+        depositVerifier = IVerifier(depositVerifier_);
     }
 
     modifier onlyOwner() {
@@ -43,17 +41,16 @@ contract ShieldedVault is IShieldedVault {
     function setSupportedToken(address token, bool allowed) external onlyOwner { supportedToken[token] = allowed; }
     function setDenominations(address token, uint256[] calldata buckets) external onlyOwner { tokenDenominations[token] = buckets; }
 
-    function latestRoot() external view returns (bytes32) {
-        return recentRoots[currentRootIndex % ROOT_HISTORY_SIZE];
+    function latestRoot() external view override returns (bytes32) {
+        return bytes32(IncrementalMerkleTree.latestRoot());
     }
 
     function _insertCommitment(bytes32 commitment) internal {
-        // MVP: just rotate roots; in a real impl, compute new root from tree insert
-        currentRootIndex += 1;
-        bytes32 newRoot = keccak256(abi.encodePacked(commitment, block.timestamp, currentRootIndex));
-        recentRoots[currentRootIndex % ROOT_HISTORY_SIZE] = newRoot;
-        emit CommitmentInserted(commitment, currentRootIndex, newRoot);
-        emit RootUpdated(newRoot);
+        // Use proper Merkle tree insertion
+        uint256 leafIndex = insert(uint256(commitment));
+        uint256 newRoot = IncrementalMerkleTree.latestRoot();
+        emit CommitmentInserted(commitment, uint32(leafIndex), bytes32(newRoot));
+        emit RootUpdated(bytes32(newRoot));
     }
 
     function _checkDenomination(address token, uint256 amount, uint256 denominationId) internal view {
@@ -61,9 +58,27 @@ contract ShieldedVault is IShieldedVault {
         if (denominationId >= buckets.length || buckets[denominationId] != amount) revert InvalidDenomination();
     }
 
-    function deposit(address token, uint256 amount, bytes32 commitment, uint256 denominationId) external {
+    function deposit(
+        address token,
+        uint256 amount,
+        bytes32 commitment,
+        uint256 denominationId,
+        bytes calldata proof
+    ) external {
         if (!supportedToken[token]) revert Unauthorized();
         _checkDenomination(token, amount, denominationId);
+        
+        // Verify the deposit proof
+        uint256[] memory publicInputs = new uint256[](3);
+        publicInputs[0] = uint256(commitment);
+        publicInputs[1] = uint256(uint160(token));
+        publicInputs[2] = denominationId;
+        
+        require(
+            depositVerifier.verifyProof(proof, publicInputs),
+            "INVALID_DEPOSIT_PROOF"
+        );
+        
         require(IERC20(token).transferFrom(msg.sender, address(this), amount), "TRANSFER_FROM_FAIL");
         _insertCommitment(commitment);
     }
@@ -78,12 +93,8 @@ contract ShieldedVault is IShieldedVault {
     ) external {
         if (!supportedToken[token]) revert Unauthorized();
 
-        // check root is in recent history (MVP: linear scan)
-        bool ok;
-        for (uint256 i = 0; i < ROOT_HISTORY_SIZE; i++) {
-            if (recentRoots[i] == root) { ok = true; break; }
-        }
-        if (!ok) revert InvalidRoot();
+        // Check root is in recent history using Merkle tree's root tracking
+        if (!isKnownRoot(uint256(root))) revert InvalidRoot();
 
         if (nullifierUsed[nullifier]) revert NullifierAlreadyUsed();
         nullifierUsed[nullifier] = true;
@@ -107,11 +118,8 @@ contract ShieldedVault is IShieldedVault {
     ) external onlyRouter returns (uint256 amountOut) {
         if (!supportedToken[tokenIn] || !supportedToken[tokenOut]) revert Unauthorized();
 
-        bool ok;
-        for (uint256 i = 0; i < ROOT_HISTORY_SIZE; i++) {
-            if (recentRoots[i] == root) { ok = true; break; }
-        }
-        if (!ok) revert InvalidRoot();
+        // Check root is in recent history using Merkle tree's root tracking
+        if (!isKnownRoot(uint256(root))) revert InvalidRoot();
 
         if (nullifierUsed[nullifier]) revert NullifierAlreadyUsed();
         nullifierUsed[nullifier] = true;
