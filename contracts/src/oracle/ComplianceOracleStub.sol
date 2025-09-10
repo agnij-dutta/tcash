@@ -27,6 +27,21 @@ contract ComplianceOracleStub is IComplianceOracle {
         if (th == 0) return true; // default allow if unset
         return amountUsd1e18 <= th;
     }
+
+    function verifyAttestationProof(
+        address /*user*/, 
+        uint8 /*attestationType*/, 
+        bytes calldata /*proof*/, 
+        uint256 /*amount*/
+    ) external pure returns (bool) {
+        // Stub implementation - always returns false (no attestations supported)
+        return false;
+    }
+    
+    function requiresAttestation(address token, uint256 amount) external view returns (bool) {
+        uint256 threshold = tokenUsdThreshold[token];
+        return threshold > 0 && amount > threshold;
+    }
 }
 
 

@@ -75,7 +75,7 @@ contract IncrementalMerkleTree {
         }
         
         nextIndex++;
-        emit LeafInsertion(leaf, leafIndex, latestRoot());
+        emit LeafInsertion(leaf, leafIndex, getLatestRoot());
         
         return leafIndex;
     }
@@ -111,7 +111,7 @@ contract IncrementalMerkleTree {
     /**
      * @dev Get the latest root
      */
-    function latestRoot() public view returns (uint256) {
+    function getLatestRoot() public view returns (uint256) {
         return roots[currentRootIndex];
     }
     

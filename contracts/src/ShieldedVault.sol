@@ -42,13 +42,14 @@ contract ShieldedVault is IShieldedVault, IncrementalMerkleTree {
     function setDenominations(address token, uint256[] calldata buckets) external onlyOwner { tokenDenominations[token] = buckets; }
 
     function latestRoot() external view override returns (bytes32) {
-        return bytes32(IncrementalMerkleTree.latestRoot());
+        return bytes32(getLatestRoot());
     }
 
     function _insertCommitment(bytes32 commitment) internal {
         // Use proper Merkle tree insertion
         uint256 leafIndex = insert(uint256(commitment));
-        uint256 newRoot = IncrementalMerkleTree.latestRoot();
+        uint256 newRoot = getLatestRoot();
+        
         emit CommitmentInserted(commitment, uint32(leafIndex), bytes32(newRoot));
         emit RootUpdated(bytes32(newRoot));
     }
@@ -102,6 +103,49 @@ contract ShieldedVault is IShieldedVault, IncrementalMerkleTree {
 
         // Compliance gating (USD amount expected externally pre-converted in MVP)
         require(complianceOracle.isExitAllowed(token, amount), "COMPLIANCE_BLOCKED");
+
+        require(IERC20(token).transfer(recipient, amount), "TRANSFER_FAIL");
+    }
+
+    /// @notice Enhanced withdrawal with attestation support for large amounts
+    function withdrawWithAttestation(
+        bytes calldata /*proof*/,
+        bytes32 root,
+        bytes32 nullifier,
+        address token,
+        uint256 amount,
+        address recipient,
+        uint8 attestationType,
+        bytes calldata attestationProof
+    ) external {
+        if (!supportedToken[token]) revert Unauthorized();
+
+        // Check root is in recent history using Merkle tree's root tracking
+        if (!isKnownRoot(uint256(root))) revert InvalidRoot();
+
+        if (nullifierUsed[nullifier]) revert NullifierAlreadyUsed();
+        nullifierUsed[nullifier] = true;
+        emit NullifierUsed(nullifier);
+
+        // Check if attestation is required
+        if (complianceOracle.requiresAttestation(token, amount)) {
+            // Verify attestation proof
+            require(
+                complianceOracle.verifyAttestationProof(
+                    msg.sender, 
+                    attestationType, 
+                    attestationProof, 
+                    amount
+                ),
+                "INVALID_ATTESTATION"
+            );
+            
+            // Mark attestation as used to prevent replay
+            // Note: This would need to be implemented in the oracle
+        } else {
+            // Still check basic threshold compliance
+            require(complianceOracle.isExitAllowed(token, amount), "COMPLIANCE_BLOCKED");
+        }
 
         require(IERC20(token).transfer(recipient, amount), "TRANSFER_FAIL");
     }
