@@ -51,7 +51,8 @@ class DepositProver {
             const solidityProof = this._formatProofForSolidity(proof);
 
             return {
-                proof: solidityProof,
+                proof: proof,           // Keep original format for verification
+                solidityProof: solidityProof,  // Formatted for contracts
                 publicSignals,
                 commitment: inputs.commitment,
                 token: inputs.token,
@@ -176,8 +177,17 @@ class DepositProver {
         console.log("✅ Mock proof generated successfully");
         console.log("📊 Public signals:", publicSignals);
         
+        // Create mock proof in snarkjs format
+        const mockProofObj = {
+            pi_a: ["0x" + mockProof.slice(0, 64), "0x" + mockProof.slice(64, 128)],
+            pi_b: [["0x" + mockProof.slice(128, 192), "0x" + mockProof.slice(192, 256)], 
+                   ["0x" + mockProof.slice(256, 320), "0x" + mockProof.slice(320, 384)]],
+            pi_c: ["0x" + mockProof.slice(384, 448), "0x" + mockProof.slice(448, 512)]
+        };
+
         return {
-            proof: mockProof,
+            proof: mockProofObj,      // snarkjs format for verification
+            solidityProof: mockProof, // hex string for contracts
             publicSignals,
             commitment: inputs.commitment,
             token: inputs.token,
