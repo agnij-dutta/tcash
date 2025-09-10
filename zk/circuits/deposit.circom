@@ -31,5 +31,5 @@ template Deposit() {
     // Focus on getting the core commitment verification working first
 }
 
-// Main circuit instantiation
-component main = Deposit();
+// Main circuit instantiation with public inputs
+component main { public [commitment, token, denominationId] } = Deposit();

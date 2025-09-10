@@ -2,6 +2,7 @@ const circomlib = require("circomlib");
 const snarkjs = require("snarkjs");
 const fs = require("fs");
 const path = require("path");
+const { poseidon4 } = require("poseidon-lite");
 
 /**
  * DepositProver - Generate and verify deposit proofs
@@ -94,19 +95,17 @@ class DepositProver {
      * @returns {string} Commitment hash
      */
     generateCommitment(pubkey, token, denominationId, salt) {
-        // For MVP, use keccak256 as placeholder until proper Poseidon is available
-        // This matches the circuit's expectation structure
-        const crypto = require("crypto");
-        const input = Buffer.concat([
-            Buffer.from(pubkey.toString().padStart(64, '0'), 'hex'),
-            Buffer.from(token.toString().padStart(64, '0'), 'hex'),
-            Buffer.from(denominationId.toString().padStart(64, '0'), 'hex'),
-            Buffer.from(salt.toString().padStart(64, '0'), 'hex')
-        ]);
+        // Use Poseidon hash to match the circuit expectation
+        // Inputs: pubkey, token, denominationId, salt (same order as circuit)
+        const inputs = [
+            BigInt(pubkey),
+            BigInt(token),
+            BigInt(denominationId),
+            BigInt(salt)
+        ];
         
-        const hash = crypto.createHash('sha256').update(input).digest('hex');
-        // Convert to field element (reduce to avoid overflow)
-        return (BigInt("0x" + hash) >> 8n).toString();
+        const hash = poseidon4(inputs);
+        return hash.toString();
     }
 
     /**
@@ -132,17 +131,16 @@ class DepositProver {
             }
         }
 
-        // For MVP, skip commitment validation since we're using mock proof generation
-        // In production with real circuits, this validation should be enabled
-        // const expectedCommitment = this.generateCommitment(
-        //     inputs.pubkey,
-        //     inputs.token, 
-        //     inputs.denominationId,
-        //     inputs.salt
-        // );
-        // if (inputs.commitment !== expectedCommitment) {
-        //     throw new Error("Commitment does not match computed hash");
-        // }
+        // Validate commitment matches computed hash
+        const expectedCommitment = this.generateCommitment(
+            inputs.pubkey,
+            inputs.token, 
+            inputs.denominationId,
+            inputs.salt
+        );
+        if (inputs.commitment !== expectedCommitment) {
+            throw new Error(`Commitment mismatch: expected ${expectedCommitment}, got ${inputs.commitment}`);
+        }
     }
 
     /**
@@ -150,12 +148,11 @@ class DepositProver {
      * @private
      */
     _formatProofForSolidity(proof) {
-        return [
-            proof.pi_a[0], proof.pi_a[1],
-            proof.pi_b[0][1], proof.pi_b[0][0],
-            proof.pi_b[1][1], proof.pi_b[1][0],
-            proof.pi_c[0], proof.pi_c[1]
-        ].map(x => BigInt(x).toString(16)).join('');
+        return {
+            pi_a: [proof.pi_a[0], proof.pi_a[1]],
+            pi_b: [[proof.pi_b[0][1], proof.pi_b[0][0]], [proof.pi_b[1][1], proof.pi_b[1][0]]],
+            pi_c: [proof.pi_c[0], proof.pi_c[1]]
+        };
     }
 
     /**
