@@ -68,7 +68,7 @@ build_circuit() {
 }
 
 # Build circuits
-for circuit in deposit; do
+for circuit in deposit spend; do
     build_circuit $circuit
 done
 
