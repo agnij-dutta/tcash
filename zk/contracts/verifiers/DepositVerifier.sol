@@ -46,6 +46,15 @@ contract Groth16Verifier {
     uint256 constant IC0x = 20670079282177959975783334840996440002428926461093355909302124385892934505463;
     uint256 constant IC0y = 21597790442194774319162086371250392033302236343705914245286810135031320744425;
     
+    uint256 constant IC1x = 20041883028824846380633758415229738069949386173542140673097543255526412733294;
+    uint256 constant IC1y = 5966843464582483755925482595017393180844510689213068021779698042945884710817;
+    
+    uint256 constant IC2x = 6906953441395419709713326251620476585150710885562882224599440724326819855504;
+    uint256 constant IC2y = 19089957007736972797752307439243058530679208788070702270905356108927586037466;
+    
+    uint256 constant IC3x = 356602528037792611129615525097974604099393486920579712733931339032604726618;
+    uint256 constant IC3y = 8906678977156919728126469802866067480328411784015452869050533493103347271606;
+    
  
     // Memory data
     uint16 constant pVk = 0;
@@ -53,7 +62,7 @@ contract Groth16Verifier {
 
     uint16 constant pLastMem = 896;
 
-    function verifyProof(uint[2] calldata _pA, uint[2][2] calldata _pB, uint[2] calldata _pC, uint[0] calldata _pubSignals) public view returns (bool) {
+    function verifyProof(uint[2] calldata _pA, uint[2][2] calldata _pB, uint[2] calldata _pC, uint[3] calldata _pubSignals) public view returns (bool) {
         assembly {
             function checkField(v) {
                 if iszero(lt(v, r)) {
@@ -96,6 +105,12 @@ contract Groth16Verifier {
                 mstore(add(_pVk, 32), IC0y)
 
                 // Compute the linear combination vk_x
+                
+                g1_mulAccC(_pVk, IC1x, IC1y, calldataload(add(pubSignals, 0)))
+                
+                g1_mulAccC(_pVk, IC2x, IC2y, calldataload(add(pubSignals, 32)))
+                
+                g1_mulAccC(_pVk, IC3x, IC3y, calldataload(add(pubSignals, 64)))
                 
 
                 // -A
@@ -149,6 +164,12 @@ contract Groth16Verifier {
             mstore(0x40, add(pMem, pLastMem))
 
             // Validate that all evaluations ∈ F
+            
+            checkField(calldataload(add(_pubSignals, 0)))
+            
+            checkField(calldataload(add(_pubSignals, 32)))
+            
+            checkField(calldataload(add(_pubSignals, 64)))
             
 
             // Validate all evaluations
