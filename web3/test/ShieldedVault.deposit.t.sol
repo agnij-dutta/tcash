@@ -30,10 +30,14 @@ contract ShieldedVaultDepositTest is Test {
 
     function test_DepositTransfersAndRecords() public {
         bytes32 commitment = keccak256("note");
-        bytes memory proof = hex"1234"; // Mock proof
+        // Mock proof components
+        uint[2] memory _pA = [uint(1), uint(2)];
+        uint[2][2] memory _pB = [[uint(3), uint(4)], [uint(5), uint(6)]];
+        uint[2] memory _pC = [uint(7), uint(8)];
+        
         vm.startPrank(user);
         usdc.approve(address(vault), 100e6);
-        vault.deposit(address(usdc), 100e6, commitment, 0, proof);
+        vault.deposit(address(usdc), 100e6, commitment, 0, _pA, _pB, _pC);
         vm.stopPrank();
         assertEq(usdc.balanceOf(address(vault)), 100e6);
     }

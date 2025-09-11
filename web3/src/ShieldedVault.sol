@@ -65,19 +65,22 @@ contract ShieldedVault is IShieldedVault {
         uint256 amount,
         bytes32 commitment,
         uint256 denominationId,
-        bytes calldata proof
+        uint[2] calldata _pA,
+        uint[2][2] calldata _pB,
+        uint[2] calldata _pC
     ) external {
         if (!supportedToken[token]) revert Unauthorized();
         _checkDenomination(token, amount, denominationId);
         
         // Verify the deposit proof
-        uint256[] memory publicInputs = new uint256[](3);
-        publicInputs[0] = uint256(commitment);
-        publicInputs[1] = uint256(uint160(token));
-        publicInputs[2] = denominationId;
+        uint[3] memory publicInputs = [
+            uint256(commitment),
+            uint256(uint160(token)),
+            denominationId
+        ];
         
         require(
-            depositVerifier.verifyProof(proof, publicInputs),
+            depositVerifier.verifyProof(_pA, _pB, _pC, publicInputs),
             "INVALID_DEPOSIT_PROOF"
         );
         
