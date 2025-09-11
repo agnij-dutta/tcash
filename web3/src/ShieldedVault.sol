@@ -7,11 +7,12 @@ import {IVerifier} from "./interfaces/IVerifier.sol";
 import {IComplianceOracle} from "./interfaces/IComplianceOracle.sol";
 import {IncrementalMerkleTree} from "./libraries/IncrementalMerkleTree.sol";
 
-contract ShieldedVault is IShieldedVault, IncrementalMerkleTree {
+contract ShieldedVault is IShieldedVault {
     address public owner;
     address public router; // allowed to call executeSpend
     IComplianceOracle public complianceOracle;
     IVerifier public depositVerifier; // Verifies deposit proofs
+    IncrementalMerkleTree public merkleTree; // Merkle tree instance
 
     mapping(bytes32 => bool) public nullifierUsed;
     mapping(address => bool) public supportedToken; // MVP: allowlist tokens
@@ -24,6 +25,7 @@ contract ShieldedVault is IShieldedVault, IncrementalMerkleTree {
         owner = msg.sender;
         complianceOracle = IComplianceOracle(complianceOracle_);
         depositVerifier = IVerifier(depositVerifier_);
+        merkleTree = new IncrementalMerkleTree();
     }
 
     modifier onlyOwner() {
@@ -42,13 +44,13 @@ contract ShieldedVault is IShieldedVault, IncrementalMerkleTree {
     function setDenominations(address token, uint256[] calldata buckets) external onlyOwner { tokenDenominations[token] = buckets; }
 
     function latestRoot() external view override returns (bytes32) {
-        return bytes32(IncrementalMerkleTree.latestRoot());
+        return bytes32(merkleTree.latestRoot());
     }
 
     function _insertCommitment(bytes32 commitment) internal {
         // Use proper Merkle tree insertion
-        uint256 leafIndex = insert(uint256(commitment));
-        uint256 newRoot = IncrementalMerkleTree.latestRoot();
+        uint256 leafIndex = merkleTree.insert(uint256(commitment));
+        uint256 newRoot = merkleTree.latestRoot();
         emit CommitmentInserted(commitment, uint32(leafIndex), bytes32(newRoot));
         emit RootUpdated(bytes32(newRoot));
     }
@@ -63,19 +65,22 @@ contract ShieldedVault is IShieldedVault, IncrementalMerkleTree {
         uint256 amount,
         bytes32 commitment,
         uint256 denominationId,
-        bytes calldata proof
+        uint[2] calldata _pA,
+        uint[2][2] calldata _pB,
+        uint[2] calldata _pC
     ) external {
         if (!supportedToken[token]) revert Unauthorized();
         _checkDenomination(token, amount, denominationId);
         
         // Verify the deposit proof
-        uint256[] memory publicInputs = new uint256[](3);
-        publicInputs[0] = uint256(commitment);
-        publicInputs[1] = uint256(uint160(token));
-        publicInputs[2] = denominationId;
+        uint[3] memory publicInputs = [
+            uint256(commitment),
+            uint256(uint160(token)),
+            denominationId
+        ];
         
         require(
-            depositVerifier.verifyProof(proof, publicInputs),
+            depositVerifier.verifyProof(_pA, _pB, _pC, publicInputs),
             "INVALID_DEPOSIT_PROOF"
         );
         
@@ -94,7 +99,7 @@ contract ShieldedVault is IShieldedVault, IncrementalMerkleTree {
         if (!supportedToken[token]) revert Unauthorized();
 
         // Check root is in recent history using Merkle tree's root tracking
-        if (!isKnownRoot(uint256(root))) revert InvalidRoot();
+        if (!merkleTree.isKnownRoot(uint256(root))) revert InvalidRoot();
 
         if (nullifierUsed[nullifier]) revert NullifierAlreadyUsed();
         nullifierUsed[nullifier] = true;
@@ -119,7 +124,7 @@ contract ShieldedVault is IShieldedVault, IncrementalMerkleTree {
         if (!supportedToken[tokenIn] || !supportedToken[tokenOut]) revert Unauthorized();
 
         // Check root is in recent history using Merkle tree's root tracking
-        if (!isKnownRoot(uint256(root))) revert InvalidRoot();
+        if (!merkleTree.isKnownRoot(uint256(root))) revert InvalidRoot();
 
         if (nullifierUsed[nullifier]) revert NullifierAlreadyUsed();
         nullifierUsed[nullifier] = true;

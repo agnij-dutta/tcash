@@ -111,7 +111,7 @@ contract IncrementalMerkleTree {
     /**
      * @dev Get the latest root
      */
-    function latestRoot() public view returns (uint256) {
+    function latestRoot() public virtual view returns (uint256) {
         return roots[currentRootIndex];
     }
     
