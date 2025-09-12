@@ -7,10 +7,11 @@ import {eERC} from "../src/token/eERC.sol";
 contract eERCTest is Test {
     eERC token;
     address vault = address(0xBEEF);
+    address router = address(0x1234);
     address alice = address(0xA11CE);
 
     function setUp() public {
-        token = new eERC("Encapsulated Token", "eTKN", vault);
+        token = new eERC("Encapsulated Token", "eTKN", vault, router);
     }
 
     function testMintBurnByVaultOnly() public {

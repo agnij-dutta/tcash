@@ -5,6 +5,7 @@ import {IShieldedVault} from "./interfaces/IShieldedVault.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {IVerifier} from "./interfaces/IVerifier.sol";
 import {IComplianceOracle} from "./interfaces/IComplianceOracle.sol";
+import {IeERC} from "./interfaces/IeERC.sol";
 import {IncrementalMerkleTree} from "./libraries/IncrementalMerkleTree.sol";
 
 contract ShieldedVault is IShieldedVault {
@@ -17,6 +18,7 @@ contract ShieldedVault is IShieldedVault {
     mapping(bytes32 => bool) public nullifierUsed;
     mapping(address => bool) public supportedToken; // MVP: allowlist tokens
     mapping(address => uint256[]) public tokenDenominations; // bucket list per token
+    mapping(address => IeERC) public eERCTokens; // token => eERC mapping
 
     error NotOwner();
     error NotRouter();
@@ -42,6 +44,7 @@ contract ShieldedVault is IShieldedVault {
     function setComplianceOracle(address o) external onlyOwner { complianceOracle = IComplianceOracle(o); }
     function setSupportedToken(address token, bool allowed) external onlyOwner { supportedToken[token] = allowed; }
     function setDenominations(address token, uint256[] calldata buckets) external onlyOwner { tokenDenominations[token] = buckets; }
+    function setERCToken(address token, address eERC) external onlyOwner { eERCTokens[token] = IeERC(eERC); }
 
     function latestRoot() external view override returns (bytes32) {
         return bytes32(merkleTree.latestRoot());
@@ -85,6 +88,13 @@ contract ShieldedVault is IShieldedVault {
         );
         
         require(IERC20(token).transferFrom(msg.sender, address(this), amount), "TRANSFER_FROM_FAIL");
+        
+        // Mint corresponding eERC tokens to user
+        IeERC eERC = eERCTokens[token];
+        if (address(eERC) != address(0)) {
+            eERC.mint(msg.sender, amount);
+        }
+        
         _insertCommitment(commitment);
     }
 
@@ -107,6 +117,12 @@ contract ShieldedVault is IShieldedVault {
 
         // Compliance gating (USD amount expected externally pre-converted in MVP)
         require(complianceOracle.isExitAllowed(token, amount), "COMPLIANCE_BLOCKED");
+
+        // Burn corresponding eERC tokens from user
+        IeERC eERC = eERCTokens[token];
+        if (address(eERC) != address(0)) {
+            eERC.burn(msg.sender, amount);
+        }
 
         require(IERC20(token).transfer(recipient, amount), "TRANSFER_FAIL");
     }
@@ -132,9 +148,19 @@ contract ShieldedVault is IShieldedVault {
 
         // Transfer tokens to router for swap
         require(IERC20(tokenIn).transfer(router, amountIn), "ROUTER_TRANSFER_FAIL");
-        // Router is expected to perform swap and callback/settle off-chain for MVP testing
-        // Return amountOut as zero in skeleton
-        return 0;
+        
+        // For MVP, we'll simulate the swap and return a mock amountOut
+        // In production, this would integrate with real Uniswap via Roshan's integration
+        uint256 swapAmountOut = amountIn; // 1:1 mock rate for testing
+        
+        // Transfer output tokens back to vault (simulated)
+        // In production, this would be the actual swap result
+        if (tokenOut != tokenIn) {
+            // For different tokens, we'd need actual swap logic
+            // For now, we'll just return the mock amount
+        }
+        
+        return swapAmountOut;
     }
 }
 

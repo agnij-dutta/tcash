@@ -19,6 +19,11 @@ interface IeERC {
     // Vault-only
     function mint(address to, uint256 amount) external;
     function burn(address from, uint256 amount) external;
+    function vaultTransfer(address from, address to, uint256 amount) external;
+    
+    // Router-only
+    function routerTransfer(address from, address to, uint256 amount) external;
+    function routerTransferFrom(address from, address to, uint256 amount) external;
 }
 
 

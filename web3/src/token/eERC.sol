@@ -9,6 +9,7 @@ contract eERC is IeERC {
     uint8 private constant _decimals = 18;
 
     address public immutable vault;
+    address public immutable router;
 
     mapping(address => uint256) private _balances;
     mapping(address => mapping(address => uint256)) private _allowances;
@@ -16,15 +17,24 @@ contract eERC is IeERC {
 
     error TransfersDisabled();
     error NotVault();
+    error NotRouter();
+    error InsufficientBalance();
+    error InsufficientAllowance();
 
-    constructor(string memory name_, string memory symbol_, address vault_) {
+    constructor(string memory name_, string memory symbol_, address vault_, address router_) {
         _name = name_;
         _symbol = symbol_;
         vault = vault_;
+        router = router_;
     }
 
     modifier onlyVault() {
         if (msg.sender != vault) revert NotVault();
+        _;
+    }
+
+    modifier onlyRouter() {
+        if (msg.sender != router) revert NotRouter();
         _;
     }
 
@@ -57,10 +67,37 @@ contract eERC is IeERC {
 
     function burn(address from, uint256 amount) external onlyVault {
         uint256 bal = _balances[from];
-        require(bal >= amount, "INSUFFICIENT_BALANCE");
+        if (bal < amount) revert InsufficientBalance();
         _balances[from] = bal - amount;
         _totalSupply -= amount;
         emit Transfer(from, address(0), amount);
+    }
+
+    // Vault-controlled transfers for private swaps and withdrawals
+    function vaultTransfer(address from, address to, uint256 amount) external onlyVault {
+        if (_balances[from] < amount) revert InsufficientBalance();
+        _balances[from] -= amount;
+        _balances[to] += amount;
+        emit Transfer(from, to, amount);
+    }
+
+    // Router-controlled transfers for private swaps
+    function routerTransfer(address from, address to, uint256 amount) external onlyRouter {
+        if (_balances[from] < amount) revert InsufficientBalance();
+        _balances[from] -= amount;
+        _balances[to] += amount;
+        emit Transfer(from, to, amount);
+    }
+
+    // Router-controlled transfers with allowance check (for advanced use cases)
+    function routerTransferFrom(address from, address to, uint256 amount) external onlyRouter {
+        if (_balances[from] < amount) revert InsufficientBalance();
+        if (_allowances[from][msg.sender] < amount) revert InsufficientAllowance();
+        
+        _allowances[from][msg.sender] -= amount;
+        _balances[from] -= amount;
+        _balances[to] += amount;
+        emit Transfer(from, to, amount);
     }
 }
 
