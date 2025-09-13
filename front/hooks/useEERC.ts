@@ -30,6 +30,14 @@ export function useEERC() {
   // Save decryption key to localStorage when it changes
   const handleRegister = async () => {
     try {
+      // First generate decryption key if not already set
+      if (!decryptionKey) {
+        const key = await eERC.generateDecryptionKey()
+        setDecryptionKey(key)
+        localStorage.setItem('eerc-decryption-key', key)
+      }
+      
+      // Then register with the eERC protocol
       const result = await eERC.register()
       if (result.key) {
         setDecryptionKey(result.key)
