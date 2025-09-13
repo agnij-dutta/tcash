@@ -6,13 +6,13 @@ import { formatPrivKeyForBabyJub } from "maci-crypto"
 import { keccak256 } from "viem"
 import { parseAbi, encodeFunctionData } from "viem"
 
-// Minimal registrar ABI
-const registrarAbi = parseAbi([
-  "function isUserRegistered(address) view returns (bool)",
-  "function register((uint256[2] a,uint256[2][2] b,uint256[2] c,uint256[5] publicSignals) proof)",
+// Minimal EERC ABI
+const eercAbi = parseAbi([
+  "function withdraw(uint256 tokenId, uint256 amount, address recipient, (uint256[2] a,uint256[2][2] b,uint256[2] c,uint256[5] publicSignals) proof) external",
+  "function tokenIds(address token) view returns (uint256)",
 ])
 
-// Derive private key from signature (same as eerc-backend-converter)
+// Derive private key from signature
 function i0(signature: string): bigint {
   if (typeof signature !== "string" || signature.length < 132)
     throw new Error("Invalid signature hex string")
@@ -38,28 +38,31 @@ function i0(signature: string): bigint {
 
 export async function POST(req: Request) {
   try {
-    const { user, signature } = await req.json()
-    if (!user || !signature) {
-      return NextResponse.json({ error: "missing user or signature" }, { status: 400 })
+    const { user, signature, tokenId, amount, recipient } = await req.json()
+    if (!user || !signature || !tokenId || !amount || !recipient) {
+      return NextResponse.json({ error: "missing params" }, { status: 400 })
     }
 
-    // Derive keys from signature (same as eerc-backend-converter)
+    // Derive keys from signature
     const privateKey = i0(signature)
     const formattedPrivateKey = formatPrivKeyForBabyJub(privateKey) % subOrder
     const publicKey = mulPointEscalar(Base8, formattedPrivateKey).map((x) => BigInt(x)) as [bigint, bigint]
 
-    // Get chain ID from request headers or default to Fuji
     const chainId = 43113 // Fuji testnet
 
-    const registrationHash = poseidon3([
+    // Generate withdraw hash
+    const withdrawHash = poseidon3([
       BigInt(chainId),
       formattedPrivateKey,
       BigInt(user),
+      BigInt(tokenId),
+      BigInt(amount),
+      BigInt(recipient),
     ])
 
-    // Paths to wasm/zkey served by our circuit router
-    const wasmUrl = new URL("/api/eerc/circuits/registration/wasm", req.url)
-    const zkeyUrl = new URL("/api/eerc/circuits/registration/zkey", req.url)
+    // Get circuit files
+    const wasmUrl = new URL("/api/eerc/circuits/withdraw/wasm", req.url)
+    const zkeyUrl = new URL("/api/eerc/circuits/withdraw/zkey", req.url)
 
     const wasmResp = await fetch(wasmUrl)
     const zkeyResp = await fetch(zkeyUrl)
@@ -72,10 +75,13 @@ export async function POST(req: Request) {
       SenderPublicKey: [String(publicKey[0]), String(publicKey[1])],
       SenderAddress: String(BigInt(user)),
       ChainID: String(BigInt(chainId)),
-      RegistrationHash: String(registrationHash),
+      TokenId: String(BigInt(tokenId)),
+      Amount: String(BigInt(amount)),
+      Recipient: String(BigInt(recipient)),
+      WithdrawHash: String(withdrawHash),
     }
 
-    // Generate proof in-memory
+    // Generate proof
     const { proof, publicSignals } = await groth16.fullProve(input, new Uint8Array(wasm), new Uint8Array(zkey))
 
     const a = [proof.pi_a[0], proof.pi_a[1]]
@@ -86,21 +92,19 @@ export async function POST(req: Request) {
     const c = [proof.pi_c[0], proof.pi_c[1]]
     const pub = publicSignals.map((x: string) => BigInt(x))
 
-    // Return calldata blob; client will send tx with their wallet
+    // Return calldata
     const data = encodeFunctionData({
-      abi: registrarAbi,
-      functionName: "register",
-      args: [{ a, b, c, publicSignals: pub } as any],
+      abi: eercAbi,
+      functionName: "withdraw",
+      args: [BigInt(tokenId), BigInt(amount), recipient as `0x${string}`, { a, b, c, publicSignals: pub } as any],
     })
 
     return NextResponse.json({ 
-      calldata: data, 
-      registrationHash: String(registrationHash),
-      publicKey: [String(publicKey[0]), String(publicKey[1])],
-      privateKey: String(formattedPrivateKey)
+      calldata: data,
+      withdrawHash: String(withdrawHash)
     })
   } catch (e: any) {
-    console.error("Registration error:", e)
-    return NextResponse.json({ error: e?.message || "registration failed" }, { status: 500 })
+    console.error("Withdraw error:", e)
+    return NextResponse.json({ error: e?.message || "withdraw failed" }, { status: 500 })
   }
 }

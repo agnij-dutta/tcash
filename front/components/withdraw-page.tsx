@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
+import { usePublicClient, useWalletClient } from "wagmi"
+import { EERC_ADDRESSES } from "@/lib/eerc-config"
 import {
   ChevronDown,
   Info,
@@ -28,6 +30,9 @@ type Token = {
 
 export default function WithdrawPage() {
   const router = useRouter()
+  const publicClient = usePublicClient()
+  const { data: walletClient } = useWalletClient()
+  
   // Mock tokens, balances, and prices (frontend only)
   const tokens = useMemo<Token[]>(
     () => [
@@ -60,6 +65,7 @@ export default function WithdrawPage() {
   // Confirmation & Success
   const [confirming, setConfirming] = useState<false | "verify" | "execute">(false)
   const [successOpen, setSuccessOpen] = useState(false)
+  const [withdrawing, setWithdrawing] = useState(false)
 
   // Derived values
   const numericAmount = useMemo(() => Number.parseFloat(amount.replace(/,/g, "")) || 0, [amount])
@@ -107,14 +113,54 @@ export default function WithdrawPage() {
     setTimeout(() => setProofCopied(false), 1500)
   }
 
-  function onConfirmWithdraw() {
-    // Two-step confirmation flow (frontend only)
-    setConfirming("verify")
-    setTimeout(() => setConfirming("execute"), 1200)
-    setTimeout(() => {
-      setConfirming(false)
+  async function onConfirmWithdraw() {
+    if (!walletClient || !publicClient) return
+    
+    try {
+      setWithdrawing(true)
+      const account = walletClient.account?.address as `0x${string}`
+      
+      // Sign message for key derivation
+      const message = `eERC\nWithdrawing ${amount} ${selectedToken.symbol}\nAddress:${account.toLowerCase()}`
+      const signature = await walletClient.signMessage({ account, message })
+      
+      // Get withdraw calldata from server
+      const res = await fetch('/api/eerc/withdraw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user: account,
+          signature,
+          tokenId: 1, // For eUSDC
+          amount: (parseFloat(amount) * 1e18).toString(), // Convert to wei
+          recipient: account, // Withdraw to same address
+        })
+      })
+      
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || 'Withdraw failed')
+      }
+      
+      const { calldata } = await res.json()
+      
+      // Send transaction to EERC contract
+      const hash = await walletClient.sendTransaction({ 
+        account, 
+        to: EERC_ADDRESSES.encryptedERC as `0x${string}`, 
+        data: calldata as `0x${string}` 
+      })
+      
+      // Wait for confirmation
+      await publicClient.waitForTransactionReceipt({ hash })
+      
       setSuccessOpen(true)
-    }, 2400)
+    } catch (e: any) {
+      console.error('Withdraw error:', e)
+      alert(`Withdraw failed: ${e.message}`)
+    } finally {
+      setWithdrawing(false)
+    }
   }
 
   return (
@@ -482,20 +528,16 @@ export default function WithdrawPage() {
                   <div className="mt-5">
                     <button
                       onClick={onConfirmWithdraw}
-                      disabled={!canConfirm || confirming !== false}
+                      disabled={!canConfirm || withdrawing}
                       className="w-full h-14 px-8 bg-[#e6ff55] text-[#0a0b0e] font-bold text-base rounded-full hover:brightness-110 transition-all duration-200 shadow-[0_10px_30px_rgba(230,255,85,0.3)] disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
                     >
-                      {confirming === false ? (
+                      {withdrawing ? (
                         <>
-                          Confirm Withdrawal <ArrowRight className="w-4 h-4" />
-                        </>
-                      ) : confirming === "verify" ? (
-                        <>
-                          <Loader2 className="w-5 h-5 animate-spin" /> Step 1: Verify proof
+                          <Loader2 className="w-5 h-5 animate-spin" /> Withdrawing...
                         </>
                       ) : (
                         <>
-                          <Loader2 className="w-5 h-5 animate-spin" /> Step 2: Execute withdrawal
+                          Confirm Withdrawal <ArrowRight className="w-4 h-4" />
                         </>
                       )}
                     </button>
