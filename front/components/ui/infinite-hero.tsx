@@ -3,11 +3,17 @@
 import { useGSAP } from "@gsap/react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { gsap } from "gsap";
-import { SplitText } from "gsap/SplitText";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 
-gsap.registerPlugin(SplitText);
+// Dynamically import SplitText to avoid SSR issues
+let SplitText: any = null;
+if (typeof window !== "undefined") {
+  import("gsap/SplitText").then((module) => {
+    SplitText = module.SplitText;
+    gsap.registerPlugin(SplitText);
+  });
+}
 
 interface ShaderPlaneProps {
 	vertexShader: string;
@@ -229,6 +235,8 @@ export default function InfiniteHero() {
 
 	useGSAP(
 		() => {
+			if (!SplitText) return;
+			
 			const ctas = ctaRef.current ? Array.from(ctaRef.current.children) : [];
 
 			const h1Split = new SplitText(h1Ref.current, { type: "lines" });
