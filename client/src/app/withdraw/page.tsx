@@ -272,7 +272,7 @@ export default function WithdrawPage() {
                 {/* Recipient */}
                 <section
                   className="rounded-2xl backdrop-blur-xl border border-white/15 p-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_10px_28px_rgba(0,0,0,0.45)]"
-                  style={{ background: "rgba(255,255,255,0.02)" }}
+                  style={{ background: "transparent" }}
                 >
                   <div className="flex items-center justify-between mb-3">
                     <label className="text-white/90 text-base font-semibold">Recipient</label>
@@ -484,7 +484,7 @@ export default function WithdrawPage() {
                     <div className="flex items-center justify-between">
                       <span>Compliance</span>
                       <span className={`${complianceRequired ? (proofReady ? "text-emerald-300" : "text-yellow-200") : "text-emerald-300"}`}>
-                        {complianceRequired ? (proofReady ? "✅ Proof ready" : "⚠️ Required") : "✅ Not required"}
+                        {complianceRequired ? (proofReady ? "Proof ready" : "Required") : "Not required"}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
@@ -578,7 +578,7 @@ export default function WithdrawPage() {
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowAddressBook(false)} />
           <div
             className="relative w-full max-w-md mx-auto backdrop-blur-3xl border border-white/15 rounded-2xl p-6 shadow-[0_12px_48px_rgba(0,0,0,0.6)]"
-            style={{ background: "rgba(255,255,255,0.02)" }}
+            style={{ background: "transparent" }}
           >
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3 text-white font-semibold text-lg">

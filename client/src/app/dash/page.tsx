@@ -219,7 +219,7 @@ export default function TsunamiDashboard() {
                   <div className="text-right">
                     <div className="text-[11px] text-white/60">{a.time}</div>
                     <div className={`text-xs font-medium ${a.status === "confirmed" ? "text-emerald-300" : "text-yellow-200"}`}>
-                      {a.status === "confirmed" ? "✅ confirmed" : "⏳ pending"}
+                      {a.status === "confirmed" ? "confirmed" : "pending"}
                     </div>
                   </div>
                 </div>
@@ -252,9 +252,9 @@ export default function TsunamiDashboard() {
               </ul>
               <div className="mt-3 text-sm">
                 {hasZkAttestation ? (
-                  <span className="text-emerald-300">✅ Ready for large withdrawals.</span>
+                  <span className="text-emerald-300">Ready for large withdrawals.</span>
                 ) : (
-                  <span className="text-yellow-200">⚠️ Link zk-attestation to enable large withdrawals.</span>
+                  <span className="text-yellow-200">Link zk-attestation to enable large withdrawals.</span>
                 )}
               </div>
               {!hasZkAttestation && (

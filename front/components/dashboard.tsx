@@ -143,7 +143,7 @@ export default function TsunamiDashboard() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
           <div
             className="backdrop-blur-3xl backdrop-saturate-200 border border-white/15 rounded-2xl px-4 py-3 flex items-center justify-between shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_16px_56px_rgba(0,0,0,0.35)]"
-            style={{ background: "rgba(255,255,255,0.03)" }}
+            style={{ background: "transparent" }}
           >
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shadow-sm">
@@ -205,7 +205,7 @@ export default function TsunamiDashboard() {
         {/* Balances Section */}
         <section
           className="backdrop-blur-xl border border-white/15 rounded-2xl p-6 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_16px_56px_rgba(0,0,0,0.45)]"
-          style={{ background: "rgba(255,255,255,0.02)" }}
+          style={{ background: "transparent" }}
         >
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-white">Private Balances</h2>
@@ -264,7 +264,7 @@ export default function TsunamiDashboard() {
           {/* Recent Activity Feed */}
           <section
             className="lg:col-span-3 backdrop-blur-xl border border-white/15 rounded-2xl p-6 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_16px_56px_rgba(0,0,0,0.45)]"
-            style={{ background: "rgba(255,255,255,0.02)" }}
+            style={{ background: "transparent" }}
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-semibold text-white">Recent Activity</h3>
@@ -292,7 +292,7 @@ export default function TsunamiDashboard() {
                     <div
                       className={`text-xs font-medium ${a.status === "confirmed" ? "text-emerald-300" : "text-yellow-200"}`}
                     >
-                      {a.status === "confirmed" ? "✅ confirmed" : "⏳ pending"}
+                      {a.status === "confirmed" ? "confirmed" : "pending"}
                     </div>
                   </div>
                 </div>
@@ -308,13 +308,13 @@ export default function TsunamiDashboard() {
             {/* Compliance & Limits */}
             <section
               className="backdrop-blur-xl border border-white/15 rounded-2xl p-6 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_16px_56px_rgba(0,0,0,0.45)]"
-              style={{ background: "rgba(255,255,255,0.02)" }}
+              style={{ background: "transparent" }}
             >
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-base font-semibold text-white">Compliance & Limits</h3>
                 {hasZkAttestation ? (
                   <span className="inline-flex items-center gap-1.5 text-emerald-300 text-xs px-2.5 py-1.5 rounded-md bg-emerald-500/15 border border-emerald-500/40">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Ready
+                    Ready
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5 text-yellow-200 text-xs px-2.5 py-1.5 rounded-md bg-yellow-500/15 border border-yellow-500/40">
@@ -328,9 +328,9 @@ export default function TsunamiDashboard() {
               </ul>
               <div className="mt-3 text-sm">
                 {hasZkAttestation ? (
-                  <span className="text-emerald-300">✅ Ready for large withdrawals.</span>
+                  <span className="text-emerald-300">Ready for large withdrawals.</span>
                 ) : (
-                  <span className="text-yellow-200">⚠️ Link zk-attestation to enable large withdrawals.</span>
+                  <span className="text-yellow-200">Link zk-attestation to enable large withdrawals.</span>
                 )}
               </div>
               {!hasZkAttestation && (

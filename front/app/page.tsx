@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import LiquidEther from "@/components/liquid-ether"
+import InfiniteHero from "@/components/ui/infinite-hero"
 import {
   Shield,
   Zap,
@@ -74,7 +75,9 @@ export default function Landing({ onNavigate }: LandingProps) {
             autoRampDuration={0.8}
           />
         </div>
-
+        
+        <InfiniteHero />
+        
         <div className="relative z-10 text-center max-w-6xl mx-auto px-6">
           {/* Main Title */}
           <h1 className="text-7xl md:text-9xl font-bold mb-8 bg-gradient-to-r from-purple-400 via-pink-400 to-purple-500 bg-clip-text text-transparent tracking-tight">

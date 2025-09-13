@@ -385,7 +385,7 @@ export default function TsunamiSwap() {
                 <button
                   onClick={onSwap}
                   disabled={isSwapping}
-                  className="h-14 px-8 sm:px-10 bg-[#e6ff55] text-[#0a0b0e] font-bold text-base sm:text-lg rounded-full hover:brightness-110 transition-all duration-200 shadow-[0_10px_30px_rgba(230,255,85,0.3)] disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="h-14 px-8 sm:px-10 bg-[#e6ff55] text-[#0a0b0e] font-bold text-base sm:text-lg rounded-full hover:brightness-110 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {isSwapping ? "Generating zk proof..." : "Swap Privately"}
                 </button>

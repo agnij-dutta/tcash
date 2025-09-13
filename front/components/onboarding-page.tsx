@@ -209,7 +209,7 @@ export default function OnboardingPage() {
     return (
       <section
         className={`rounded-2xl backdrop-blur-xl border border-white/15 p-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_10px_28px_rgba(0,0,0,0.45)] ${className}`}
-        style={{ background: "rgba(255,255,255,0.02)" }}
+        style={{ background: "transparent" }}
       >
         {children}
       </section>
@@ -271,14 +271,14 @@ export default function OnboardingPage() {
                       <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shadow">
                         <Shield className="w-7 h-7 text-black" />
                       </div>
-                      <div className="text-3xl font-extrabold tracking-tight text-white">Tsunami 🌊</div>
+                      <div className="text-3xl font-extrabold tracking-tight text-white">Tsunami</div>
                       <div className="text-white/85 text-base">“Private. Compliant. DeFi-native.”</div>
                       <div className="text-white/60 text-sm max-w-xl">
                         Your tokens, your privacy. Built on Uniswap v4 + zkSNARKs.
                       </div>
                       <Button
                         onClick={next}
-                        className="mt-2 rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold px-6 h-11 shadow-[0_10px_30px_rgba(230,255,85,0.3)] hover:brightness-110"
+                        className="mt-2 rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold px-6 h-11 hover:brightness-110"
                       >
                         Get Started
                       </Button>
@@ -593,7 +593,7 @@ export default function OnboardingPage() {
                   <Card>
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 rounded-full bg-[#e6ff55] text-[#0a0b0e] flex items-center justify-center">
-                        🌊
+                        <CheckCircle2 className="w-6 h-6" />
                       </div>
                       <div>
                         <div className="text-white font-semibold">Your wallet is ready.</div>
@@ -608,7 +608,7 @@ export default function OnboardingPage() {
                     <div className="mt-4 grid sm:grid-cols-3 gap-3">
                       <Button
                         onClick={() => router.push("/dash")}
-                        className="h-12 w-full rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold shadow-[0_10px_30px_rgba(230,255,85,0.3)] hover:brightness-110 inline-flex items-center justify-center gap-2"
+                        className="h-12 w-full rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold hover:brightness-110 inline-flex items-center justify-center gap-2"
                       >
                         Go to Dashboard
                       </Button>
@@ -625,7 +625,7 @@ export default function OnboardingPage() {
                         Finish
                       </Button>
                     </div>
-                    {confetti && <div className="mt-4 text-center text-2xl">🎉</div>}
+                    {confetti && <div className="mt-4 text-center text-sm text-white/70">All set</div>}
                   </Card>
                 )}
 

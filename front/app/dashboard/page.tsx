@@ -98,7 +98,7 @@ export default function TsunamiDashboard() {
       {/* Header / Identity */}
       <header className="sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
-          <div className="backdrop-blur-3xl backdrop-saturate-200 border border-white/15 rounded-2xl px-4 py-3 flex items-center justify-between shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_16px_56px_rgba(0,0,0,0.35)]" style={{ background: "rgba(255,255,255,0.03)" }}>
+          <div className="backdrop-blur-3xl backdrop-saturate-200 border border-white/15 rounded-2xl px-4 py-3 flex items-center justify-between shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_16px_56px_rgba(0,0,0,0.35)]" style={{ background: "transparent" }}>
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shadow-sm">
                 <Shield className="w-5 h-5 text-black" />
@@ -135,7 +135,7 @@ export default function TsunamiDashboard() {
         {/* Quick Actions (Always Visible) */}
         <div className="sticky top-[72px] z-20">
           <div className="grid grid-cols-3 gap-3">
-            <button onClick={goDeposit} className="flex items-center justify-center gap-2 px-4 py-3 rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold shadow-[0_10px_30px_rgba(230,255,85,0.3)] hover:brightness-110 transition-all">
+            <button onClick={goDeposit} className="flex items-center justify-center gap-2 px-4 py-3 rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold hover:brightness-110 transition-all">
               <Wallet className="w-4 h-4" /> Deposit
             </button>
             <button onClick={() => goSwap()} className="flex items-center justify-center gap-2 px-4 py-3 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-white/90 font-semibold hover:bg-white/15 transition-colors">
@@ -148,7 +148,7 @@ export default function TsunamiDashboard() {
         </div>
 
         {/* Balances Section */}
-        <section className="backdrop-blur-xl border border-white/15 rounded-2xl p-6 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_16px_56px_rgba(0,0,0,0.45)]" style={{ background: "rgba(255,255,255,0.02)" }}>
+        <section className="backdrop-blur-xl border border-white/15 rounded-2xl p-6 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_16px_56px_rgba(0,0,0,0.45)]" style={{ background: "transparent" }}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-white">Private Balances</h2>
             <button
@@ -197,7 +197,7 @@ export default function TsunamiDashboard() {
         {/* Content Grid: Activity | Compliance & Limits | Analytics */}
         <div className="grid lg:grid-cols-5 gap-6">
           {/* Recent Activity Feed */}
-          <section className="lg:col-span-3 backdrop-blur-xl border border-white/15 rounded-2xl p-6 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_16px_56px_rgba(0,0,0,0.45)]" style={{ background: "rgba(255,255,255,0.02)" }}>
+          <section className="lg:col-span-3 backdrop-blur-xl border border-white/15 rounded-2xl p-6 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_16px_56px_rgba(0,0,0,0.45)]" style={{ background: "transparent" }}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-semibold text-white">Recent Activity</h3>
               <Activity className="w-4 h-4 text-white/60" />
@@ -219,7 +219,7 @@ export default function TsunamiDashboard() {
                   <div className="text-right">
                     <div className="text-[11px] text-white/60">{a.time}</div>
                     <div className={`text-xs font-medium ${a.status === "confirmed" ? "text-emerald-300" : "text-yellow-200"}`}>
-                      {a.status === "confirmed" ? "✅ confirmed" : "⏳ pending"}
+                      {a.status === "confirmed" ? "confirmed" : "pending"}
                     </div>
                   </div>
                 </div>
@@ -233,7 +233,7 @@ export default function TsunamiDashboard() {
           {/* Right Column: Compliance & Analytics */}
           <div className="lg:col-span-2 space-y-6">
             {/* Compliance & Limits */}
-            <section className="backdrop-blur-xl border border-white/15 rounded-2xl p-6 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_16px_56px_rgba(0,0,0,0.45)]" style={{ background: "rgba(255,255,255,0.02)" }}>
+            <section className="backdrop-blur-xl border border-white/15 rounded-2xl p-6 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_16px_56px_rgba(0,0,0,0.45)]" style={{ background: "transparent" }}>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-base font-semibold text-white">Compliance & Limits</h3>
                 {hasZkAttestation ? (
@@ -252,16 +252,16 @@ export default function TsunamiDashboard() {
               </ul>
               <div className="mt-3 text-sm">
                 {hasZkAttestation ? (
-                  <span className="text-emerald-300">✅ Ready for large withdrawals.</span>
+                  <span className="text-emerald-300">Ready for large withdrawals.</span>
                 ) : (
-                  <span className="text-yellow-200">⚠️ Link zk-attestation to enable large withdrawals.</span>
+                  <span className="text-yellow-200">Link zk-attestation to enable large withdrawals.</span>
                 )}
               </div>
               {!hasZkAttestation && (
                 <div className="mt-4">
                   <button
                     onClick={() => setHasZkAttestation(true)}
-                    className="px-4 py-2 rounded-full bg-[#e6ff55] text-[#0a0b0e] text-sm font-bold shadow-[0_10px_30px_rgba(230,255,85,0.3)] hover:brightness-110 transition"
+                    className="px-4 py-2 rounded-full bg-[#e6ff55] text-[#0a0b0e] text-sm font-bold hover:brightness-110 transition"
                   >
                     Provide zk-Attestation
                   </button>

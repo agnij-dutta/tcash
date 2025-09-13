@@ -182,7 +182,7 @@ export default function WithdrawPage() {
       <div className="w-full max-w-6xl mx-auto px-4 pb-10 relative z-10 pt-8">
         {/* Glass wrapper */}
         <div className="relative rounded-[32px] overflow-hidden shadow-[0_24px_70px_rgba(0,0,0,0.55)]">
-          <div className="absolute inset-0 opacity-45 pointer-events-none bg-[radial-gradient(120%_120%_at_50%_0%,rgba(255,255,255,0.16)_0%,rgba(255,255,255,0.08)_40%,rgba(255,255,255,0.03)_100%)]" />
+          <div className="absolute inset-0 opacity-45 pointer-events-none" style={{ background: "transparent" }} />
           <div
             className="absolute -inset-1 rounded-[36px] pointer-events-none"
             style={{
@@ -191,7 +191,7 @@ export default function WithdrawPage() {
           />
           <div
             className="relative backdrop-blur-3xl backdrop-saturate-200 border border-white/15 rounded-[32px] p-5 sm:p-6 lg:p-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_16px_56px_rgba(0,0,0,0.55)]"
-            style={{ background: "rgba(255,255,255,0.015)" }}
+            style={{ background: "transparent" }}
           >
             {/* Header */}
             <div className="flex items-start justify-between mb-2">
@@ -237,7 +237,7 @@ export default function WithdrawPage() {
                 {/* Token & Amount */}
                 <section
                   className="rounded-2xl backdrop-blur-xl border border-white/15 p-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_10px_28px_rgba(0,0,0,0.45)]"
-                  style={{ background: "rgba(255,255,255,0.08)" }}
+                  style={{ background: "transparent" }}
                 >
                   <div className="flex items-center justify-between">
                     <label className="text-white text-base font-semibold">Token & Amount</label>
@@ -516,7 +516,7 @@ export default function WithdrawPage() {
                       <span
                         className={`${complianceRequired ? (proofReady ? "text-emerald-300" : "text-yellow-200") : "text-emerald-300"}`}
                       >
-                        {complianceRequired ? (proofReady ? "✅ Proof ready" : "⚠️ Required") : "✅ Not required"}
+                        {complianceRequired ? (proofReady ? "Proof ready" : "Required") : "Not required"}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">

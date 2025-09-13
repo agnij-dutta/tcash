@@ -22,7 +22,7 @@ function getCircuitURLs(basePath: string = "/api/eerc/circuits") {
 }
 // EERCProvider removed to avoid bundling SDK in client; SDK used server-side via API
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 
 export const metadata: Metadata = {
   title: "tZunami - Private. Compliant. DeFi-native.",
@@ -37,7 +37,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-black text-white`}>
+      <body className={`${inter.variable} font-sans bg-black text-white`}>
         <div className="fixed inset-0 z-0">
           <LiquidEther
             colors={["#5227FF", "#FF9FFC", "#B19EEF"]}

@@ -35,7 +35,7 @@ export default function RootLayout({
             <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
               <Link href="/" className="flex items-center gap-2 text-white/90">
                 <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white">
-                  <span className="text-black">🌊</span>
+                  <span className="text-black font-bold">T</span>
                 </span>
                 <span className="font-semibold">Tsunami</span>
               </Link>
