@@ -1,6 +1,9 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { useAccount } from "wagmi"
+import { useEERC } from "@/hooks/useEERC"
+import { useEncryptedBalance } from "@/hooks/useEncryptedBalance"
 import {
   ArrowUpDown,
   ChevronDown,
@@ -15,14 +18,18 @@ import {
 import LiquidEther from "./liquid-ether"
 
 export default function TsunamiSwap() {
+  const { address, isConnected } = useAccount()
+  const { isInitialized, isRegistered } = useEERC()
+  const { balanceInTokens, privateTransfer, refetchBalance } = useEncryptedBalance()
+
   const tokenList = useMemo(
     () => [
-      { symbol: "eUSDC", name: "Encrypted USD Coin", balance: 23489.89 },
-      { symbol: "eDAI", name: "Encrypted DAI", balance: 12045.12 },
-      { symbol: "BNB", name: "BNB", balance: 5695.89 },
-      { symbol: "USDT", name: "Tether", balance: 7575.93 },
+      { symbol: "eUSDC", name: "Encrypted USD Coin", balance: balanceInTokens },
+      { symbol: "eDAI", name: "Encrypted DAI", balance: 0 },
+      { symbol: "eETH", name: "Encrypted ETH", balance: 0 },
+      { symbol: "eUSDT", name: "Encrypted Tether", balance: 0 },
     ],
-    [],
+    [balanceInTokens],
   )
 
   const [fromToken, setFromToken] = useState(tokenList[0])
@@ -92,6 +99,11 @@ export default function TsunamiSwap() {
   }
 
   async function onSwap() {
+    if (!isConnected || !isRegistered) {
+      setErrorMessage("Please connect your wallet and register with eERC first")
+      return
+    }
+
     setErrorMessage(null)
     const amt = Number.parseFloat(fromAmount.replace(/,/g, ""))
     if (!isFinite(amt) || amt <= 0) {
@@ -106,11 +118,20 @@ export default function TsunamiSwap() {
     try {
       setIsSwapping(true)
       addToast("Generating zk proof...")
-      await new Promise((r) => setTimeout(r, 1000))
+      
+      // Convert amount to wei (assuming 18 decimals for now)
+      const amountInWei = BigInt(Math.floor(amt * Math.pow(10, 18)))
+      
+      // For now, we'll simulate a transfer to the same address (self-transfer)
+      // In a real implementation, this would be a proper swap through Uniswap
+      const result = await privateTransfer(address!, amountInWei, `Swapped ${amt} ${fromToken.symbol} to ${toToken.symbol}`)
+      
       addToast("Proof generated successfully")
-      await new Promise((r) => setTimeout(r, 800))
       addToast("Transaction submitted to PrivacyRouter")
-      await new Promise((r) => setTimeout(r, 700))
+      
+      // Refresh balance
+      await refetchBalance()
+      
       setIsSwapping(false)
       setSuccessOpen(true)
     } catch (e) {

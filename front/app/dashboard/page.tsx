@@ -16,6 +16,10 @@ import {
 } from "lucide-react"
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useAccount } from "wagmi"
+import { useEERC } from "@/hooks/useEERC"
+import { useEncryptedBalance } from "@/hooks/useEncryptedBalance"
+import { WalletConnect } from "@/components/wallet-connect"
 
 type TokenRow = {
   symbol: string
@@ -26,16 +30,39 @@ type TokenRow = {
 
 export default function TsunamiDashboard() {
   const router = useRouter()
+  const { address, isConnected } = useAccount()
+  const { 
+    isInitialized, 
+    isRegistered, 
+    register
+  } = useEERC()
+  const { 
+    decryptedBalance, 
+    balanceInTokens,
+    privateMint,
+    privateBurn,
+    privateTransfer,
+    withdraw,
+    deposit,
+    refetchBalance
+  } = useEncryptedBalance()
+  
   const [showBalances, setShowBalances] = useState(true)
   const [hasZkAttestation, setHasZkAttestation] = useState<boolean>(true)
   const [stealthAddress, setStealthAddress] = useState<string>(
-    "0x3a1f2b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f01"
+    address || "0x3a1f2b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f01"
   )
 
+  // Convert decrypted balance to display format
+  const balanceInTokensFormatted = useMemo(() => {
+    if (!decryptedBalance) return 0
+    return Number(decryptedBalance)
+  }, [decryptedBalance])
+
   const tokens: TokenRow[] = [
-    { symbol: "eUSDC", balance: 1000, usd: 1000, icon: DollarSign },
-    { symbol: "eDAI", balance: 500, usd: 500, icon: Coins },
-    { symbol: "eETH", balance: 0.5, usd: 800, icon: Zap },
+    { symbol: "eUSDC", balance: balanceInTokensFormatted, usd: balanceInTokensFormatted, icon: DollarSign },
+    { symbol: "eDAI", balance: 0, usd: 0, icon: Coins },
+    { symbol: "eETH", balance: 0, usd: 0, icon: Zap },
   ]
 
   const totalUsd = useMemo(() => tokens.reduce((sum, t) => sum + t.usd, 0), [tokens])
@@ -79,6 +106,39 @@ export default function TsunamiDashboard() {
     const colors = ["#8B5CF6", "#22C55E", "#F59E0B", "#06B6D4", "#EF4444"]
     return { start, end, color: colors[i % colors.length], label: a.symbol }
   })
+
+  // Show loading state
+  if (!isConnected) {
+    return (
+      <div className="relative min-h-screen w-full overflow-hidden flex flex-col font-sans items-center justify-center">
+        <div className="text-center">
+          <Shield className="w-16 h-16 text-white/60 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-white mb-2">Connect Your Wallet</h2>
+          <p className="text-white/60 mb-6">Please connect your wallet to access the dashboard</p>
+          <WalletConnect />
+        </div>
+      </div>
+    )
+  }
+
+  // Show registration prompt
+  if (!isRegistered && isInitialized) {
+    return (
+      <div className="relative min-h-screen w-full overflow-hidden flex flex-col font-sans items-center justify-center">
+        <div className="text-center max-w-md">
+          <Shield className="w-16 h-16 text-white/60 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-white mb-2">Register for eERC</h2>
+          <p className="text-white/60 mb-6">You need to register with the eERC protocol to start using private tokens</p>
+          <button
+            onClick={register}
+            className="px-6 py-3 rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold hover:brightness-110 transition-all"
+          >
+            Register Now
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden flex flex-col font-sans">
