@@ -43,7 +43,7 @@ export default function Landing() {
                   backgroundClip: "text",
                 }}
               >
-                tZunami
+                TZYNAMI
               </span>
             </h1>
             <div className="w-32 h-1 bg-[#FF9FFC] mx-auto mb-6"></div>

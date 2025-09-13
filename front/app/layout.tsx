@@ -44,8 +44,8 @@ export default function RootLayout({
 
         <Navbar />
 
-        {/* Page content */}
-        <div className="relative z-10">{children}</div>
+        {/* Page content (offset below fixed navbar) */}
+        <main >{children}</main>
       </body>
     </html>
   )

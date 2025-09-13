@@ -118,7 +118,7 @@ export default function DepositPage() {
 
   return (
     <TooltipProvider>
-      <div className="relative min-h-screen w-full overflow-hidden flex flex-col items-center">
+      <div className="relative min-h-[calc(100vh-7rem)] w-full overflow-hidden flex flex-col items-center justify-center">
         {/* Background image */}
         <div
           className="pointer-events-none absolute inset-0"
@@ -133,7 +133,7 @@ export default function DepositPage() {
         <div className="pointer-events-none absolute inset-0 bg-black/10" />
 
         {/* Page container */}
-        <div className="w-full max-w-6xl mx-auto px-4 pb-10 relative z-10 pt-8">
+        <div className="w-full max-w-6xl mx-auto px-4 pb-10 relative z-10">
           {/* Glass wrapper */}
           <div className="relative rounded-[32px] overflow-hidden shadow-[0_24px_70px_rgba(0,0,0,0.55)]">
             <div className="absolute inset-0 opacity-45 pointer-events-none bg-[radial-gradient(120%_120%_at_50%_0%,rgba(255,255,255,0.16)_0%,rgba(255,255,255,0.08)_40%,rgba(255,255,255,0.03)_100%)]" />

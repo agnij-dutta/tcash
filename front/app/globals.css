@@ -119,6 +119,10 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 7rem; /* keep content clear of fixed navbar on anchor jumps */
+  }
   body {
     @apply bg-background text-foreground;
   }

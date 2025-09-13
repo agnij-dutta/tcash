@@ -125,7 +125,7 @@ export default function TsunamiSwap() {
   }
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden flex flex-col items-center">
+    <div className="relative min-h-[calc(100vh-7rem)] w-full overflow-hidden flex flex-col items-center justify-center">
       {/* Background image */}
       <div
         className="pointer-events-none absolute inset-0"
@@ -140,7 +140,7 @@ export default function TsunamiSwap() {
       <div className="pointer-events-none absolute inset-0 bg-black/10" />
 
       {/* Stepper */}
-      <div className="pt-8 mb-6 relative z-10">
+      <div className="mb-6 relative z-10">
         <div className="flex items-center gap-3 bg-white/8 border border-white/20 backdrop-blur-md rounded-3xl px-4 py-2 shadow-[0_8px_28px_rgba(0,0,0,0.35)]">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
