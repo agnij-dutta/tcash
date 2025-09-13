@@ -5,6 +5,22 @@ import "./globals.css"
 import "../components/liquid-ether.css"
 import Navbar from "../components/navbar"
 import LiquidEther from "../components/liquid-ether"
+import Providers from "../components/Providers"
+import { use } from "react"
+// Inline EERC config to avoid module resolution issues during initial wiring
+const EERC_ADDRESSES = {
+  encryptedERC: "0x271B03d3A18b2270764669EDa1696f0b43634764",
+}
+function getCircuitURLs(basePath: string = "/api/eerc/circuits") {
+  return {
+    register: { wasm: `${basePath}/registration/wasm`, zkey: `${basePath}/registration/zkey` },
+    transfer: { wasm: `${basePath}/transfer/wasm`, zkey: `${basePath}/transfer/zkey` },
+    mint: { wasm: `${basePath}/mint/wasm`, zkey: `${basePath}/mint/zkey` },
+    withdraw: { wasm: `${basePath}/withdraw/wasm`, zkey: `${basePath}/withdraw/zkey` },
+    burn: { wasm: `${basePath}/burn/wasm`, zkey: `${basePath}/burn/zkey` },
+  } as const
+}
+// EERCProvider removed to avoid bundling SDK in client; SDK used server-side via API
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -41,11 +57,10 @@ export default function RootLayout({
             autoRampDuration={0.6}
           />
         </div>
-
-        <Navbar />
-
-        {/* Page content (offset below fixed navbar) */}
-        <main >{children}</main>
+        <Providers>
+          <Navbar />
+          <main >{children}</main>
+        </Providers>
       </body>
     </html>
   )

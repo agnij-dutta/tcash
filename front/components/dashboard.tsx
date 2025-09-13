@@ -16,9 +16,11 @@ import {
 } from "lucide-react"
 import type React from "react"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import LiquidEther from "./liquid-ether"
+import { usePublicClient, useWalletClient } from "wagmi"
+import { EERC_ADDRESSES } from "@/lib/eerc-config"
 
 type TokenRow = {
   symbol: string
@@ -29,15 +31,46 @@ type TokenRow = {
 
 export default function TsunamiDashboard() {
   const router = useRouter()
+  const publicClient = usePublicClient()
+  const { data: walletClient } = useWalletClient()
+  const [isRegistered, setIsRegistered] = useState(false)
+
+  async function ensureRegistered() { setIsRegistered(true) }
+
+  // SDK decrypted balance via useEncryptedBalance hook
+  const encBal = null as any
   const [showBalances, setShowBalances] = useState(true)
   const [hasZkAttestation, setHasZkAttestation] = useState<boolean>(true)
   const [stealthAddress, setStealthAddress] = useState<string>("0x3a1f2b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f01")
 
   const tokens: TokenRow[] = [
-    { symbol: "eUSDC", balance: 1000, usd: 1000, icon: DollarSign },
-    { symbol: "eDAI", balance: 500, usd: 500, icon: Coins },
-    { symbol: "eETH", balance: 0.5, usd: 800, icon: Zap },
+    { symbol: "eUSDC", balance: 0, usd: 0, icon: DollarSign },
+    { symbol: "eDAI", balance: 0, usd: 0, icon: Coins },
+    { symbol: "eETH", balance: 0, usd: 0, icon: Zap },
   ]
+
+  // Encrypted balance preview (USDC only for demo)
+  const [encBalance, setEncBalance] = useState<any | null>(null)
+  useEffect(() => {
+    ;(async () => {
+      try {
+        if (!isRegistered) return
+        const res = await fetch("/api/eerc/balance", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            encryptedErcAddress: EERC_ADDRESSES.encryptedERC,
+            user: (await walletClient?.getAddresses?.())?.[0] ?? undefined,
+            token: EERC_ADDRESSES.testERC20,
+          }),
+        })
+        const data = await res.json()
+        setEncBalance(data || null)
+      } catch (_) {
+        setEncBalance(null)
+      }
+    })()
+  }, [isRegistered, walletClient])
 
   const totalUsd = useMemo(() => tokens.reduce((sum, t) => sum + t.usd, 0), [])
 
