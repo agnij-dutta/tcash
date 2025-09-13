@@ -125,17 +125,7 @@ export default function TsunamiSwap() {
   }
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden flex flex-col items-center pt-24 md:pt-28">
-      {/* Local metallic gradient defs */}
-      <svg aria-hidden="true" width="0" height="0" className="absolute">
-        <defs>
-          <linearGradient id="metallic-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#ffffff" />
-            <stop offset="45%" stopColor="#d4d4d4" />
-            <stop offset="100%" stopColor="#737373" />
-          </linearGradient>
-        </defs>
-      </svg>
+    <div className="relative min-h-[calc(100vh-7rem)] w-full overflow-hidden flex flex-col items-center justify-center">
       {/* Background image */}
       <div
         className="pointer-events-none absolute inset-0"
@@ -190,7 +180,7 @@ export default function TsunamiSwap() {
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-8">
                 <div className="flex items-center gap-3">
-                  <button className="text-xl font-light tracking-tight bg-gradient-to-b from-white via-zinc-300 to-zinc-500 bg-clip-text text-transparent">Swap</button>
+                  <button className="text-white text-xl font-bold tracking-wide">Swap</button>
                 </div>
               </div>
               <div className="flex items-center gap-2 sm:gap-3">
@@ -395,7 +385,7 @@ export default function TsunamiSwap() {
                 <button
                   onClick={onSwap}
                   disabled={isSwapping}
-                  className="h-14 px-8 sm:px-10 bg-[#e6ff55] text-[#0a0b0e] font-bold text-base sm:text-lg rounded-full hover:brightness-110 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="h-14 px-8 sm:px-10 bg-[#e6ff55] text-[#0a0b0e] font-bold text-base sm:text-lg rounded-full hover:brightness-110 transition-all duration-200 shadow-[0_10px_30px_rgba(230,255,85,0.3)] disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {isSwapping ? "Generating zk proof..." : "Swap Privately"}
                 </button>
@@ -410,7 +400,8 @@ export default function TsunamiSwap() {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => setSelectingSide(null)} />
           <div
-            className="relative w-full max-w-md mx-auto backdrop-blur-3xl border border-white/15 rounded-2xl p-6 shadow-[0_12px_48px_rgba(0,0,0,0.6)] bg-black/60 text-white"
+            className="relative w-full max-w-md mx-auto backdrop-blur-3xl border border-white/15 rounded-2xl p-6 shadow-[0_12px_48px_rgba(0,0,0,0.6)]"
+            style={{ background: "rgba(255,255,255,0.02)" }}
           >
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3 text-white font-semibold text-lg">
@@ -459,7 +450,8 @@ export default function TsunamiSwap() {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => setSuccessOpen(false)} />
           <div
-            className="relative w-full max-w-md mx-auto backdrop-blur-3xl border border-white/15 rounded-2xl p-8 text-center shadow-[0_12px_48px_rgba(0,0,0,0.6)] bg-black/60 text-white"
+            className="relative w-full max-w-md mx-auto backdrop-blur-3xl border border-white/15 rounded-2xl p-8 text-center shadow-[0_12px_48px_rgba(0,0,0,0.6)]"
+            style={{ background: "rgba(255,255,255,0.02)" }}
           >
             <div className="mx-auto mb-4 w-14 h-14 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center">
               <CheckCircle2 className="w-7 h-7 text-emerald-300" />

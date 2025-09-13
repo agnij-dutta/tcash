@@ -2,8 +2,6 @@
 
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { usePublicClient, useWalletClient } from "wagmi"
-import { EERC_ADDRESSES } from "@/lib/eerc-config"
 import {
   Shield,
   Info,
@@ -39,8 +37,6 @@ const FIXED_DENOMS = [100, 500, 1000]
 
 export default function DepositPage() {
   const router = useRouter()
-  const publicClient = usePublicClient()
-  const { data: walletClient } = useWalletClient()
 
   // UI State
   const [showTokenModal, setShowTokenModal] = useState(false)
@@ -52,7 +48,6 @@ export default function DepositPage() {
   const [showVariableFuture, setShowVariableFuture] = useState(false)
 
   const [generatingNote, setGeneratingNote] = useState(false)
-  const [depositing, setDepositing] = useState(false)
   const [noteReady, setNoteReady] = useState(false)
 
   const [confirming, setConfirming] = useState<false | "approve" | "lock">(false)
@@ -98,46 +93,12 @@ export default function DepositPage() {
     }, 1100)
   }
 
-  async function onConfirmDeposit() {
-    if (!walletClient || !publicClient) return
-    
-    try {
-      setDepositing(true)
-      const account = walletClient.account?.address as `0x${string}`
-      
-      // Sign message for key derivation
-      const message = `eERC\nDepositing ${amount} ${selectedToken.symbol}\nAddress:${account.toLowerCase()}`
-      const signature = await walletClient.signMessage({ account, message })
-      
-      // Get deposit calldata from server
-      const res = await fetch('/api/eerc/deposit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user: account,
-          signature,
-          token: EERC_ADDRESSES.testERC20,
-          amount: (parseFloat(amount) * 1e18).toString(), // Convert to wei
-        })
-      })
-      
-      if (!res.ok) {
-        const error = await res.json()
-        throw new Error(error.error || 'Deposit failed')
-      }
-      
-      const { calldata } = await res.json()
-      
-      // Send transaction to EERC contract
-      const hash = await walletClient.sendTransaction({ 
-        account, 
-        to: EERC_ADDRESSES.encryptedERC as `0x${string}`, 
-        data: calldata as `0x${string}` 
-      })
-      
-      // Wait for confirmation
-      await publicClient.waitForTransactionReceipt({ hash })
-      
+  function onConfirmDeposit() {
+    // 2-step UI-only flow
+    setConfirming("approve")
+    setTimeout(() => setConfirming("lock"), 1200)
+    setTimeout(() => {
+      setConfirming(false)
       setSuccessOpen(true)
       // update local recent log
       setRecent((prev) => [
@@ -147,12 +108,7 @@ export default function DepositPage() {
         },
         ...prev.slice(0, 4),
       ])
-    } catch (e: any) {
-      console.error('Deposit error:', e)
-      alert(`Deposit failed: ${e.message}`)
-    } finally {
-      setDepositing(false)
-    }
+    }, 2400)
   }
 
   const stealthAddress = "0xStealth...abcd"
@@ -162,21 +118,12 @@ export default function DepositPage() {
 
   return (
     <TooltipProvider>
-      <div className="relative min-h-screen w-full overflow-hidden flex flex-col items-center">
-        {/* Local metallic gradient defs */}
-        <svg aria-hidden="true" width="0" height="0" className="absolute">
-          <defs>
-            <linearGradient id="metallic-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#ffffff" />
-              <stop offset="45%" stopColor="#d4d4d4" />
-              <stop offset="100%" stopColor="#737373" />
-            </linearGradient>
-          </defs>
-        </svg>
+      <div className="relative min-h-[calc(100vh-7rem)] w-full overflow-hidden flex flex-col items-center justify-center">
         {/* Background image */}
         <div
           className="pointer-events-none absolute inset-0"
           style={{
+            backgroundImage: "url('/back.jpg')",
             backgroundSize: "cover",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
@@ -189,7 +136,7 @@ export default function DepositPage() {
         <div className="w-full max-w-6xl mx-auto px-4 pb-10 relative z-10">
           {/* Glass wrapper */}
           <div className="relative rounded-[32px] overflow-hidden shadow-[0_24px_70px_rgba(0,0,0,0.55)]">
-            <div className="absolute inset-0 opacity-45 pointer-events-none" style={{ background: "transparent" }} />
+            <div className="absolute inset-0 opacity-45 pointer-events-none bg-[radial-gradient(120%_120%_at_50%_0%,rgba(255,255,255,0.16)_0%,rgba(255,255,255,0.08)_40%,rgba(255,255,255,0.03)_100%)]" />
             <div
               className="absolute -inset-1 rounded-[36px] pointer-events-none"
               style={{
@@ -198,15 +145,15 @@ export default function DepositPage() {
             />
             <div
               className="relative backdrop-blur-3xl backdrop-saturate-200 border border-white/15 rounded-[32px] p-5 sm:p-6 lg:p-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_16px_56px_rgba(0,0,0,0.55)]"
-              style={{ background: "transparent" }}
+              style={{ background: "rgba(255,255,255,0.015)" }}
             >
               {/* Header */}
               <div className="flex items-start justify-between mb-2">
                 <div>
-                  <div className="text-xl font-light tracking-tight flex items-center gap-2">
-                    <button className="text-xl font-light tracking-tight bg-gradient-to-b from-white via-zinc-300 to-zinc-500 bg-clip-text text-transparent">Deposit</button>
+                  <div className="text-white text-xl font-bold tracking-wide flex items-center gap-2">
+                    <button className="text-white text-xl font-bold tracking-wide">Deposit</button>
                     <span className="inline-flex items-center gap-1 text-white text-xs px-2.5 py-1.5 rounded-md bg-white/10 border border-white/15">
-                      <Shield className="w-3.5 h-3.5 [stroke:url(#metallic-gradient)]" /> public → private
+                      <Shield className="w-3.5 h-3.5" /> public → private
                     </span>
                   </div>
                   <div className="text-white text-base font-medium mt-2">
@@ -216,7 +163,7 @@ export default function DepositPage() {
 
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => router.push("/dashboard")}
+                    onClick={() => router.push("/dash")}
                     className="px-3 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-white hover:bg-white/15 inline-flex items-center gap-2 text-sm"
                   >
                     <ArrowLeft className="w-4 h-4" /> Dashboard
@@ -243,7 +190,7 @@ export default function DepositPage() {
                   {/* Token & Amount */}
                   <section
                     className="rounded-2xl backdrop-blur-xl border border-white/15 p-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_10px_28px_rgba(0,0,0,0.45)]"
-                    style={{ background: "transparent" }}
+                    style={{ background: "rgba(255,255,255,0.08)" }}
                   >
                     <div className="flex items-center justify-between">
                       <label className="text-white text-base font-semibold">Token & Amount</label>
@@ -257,7 +204,7 @@ export default function DepositPage() {
                       <button
                         onClick={() => setShowTokenModal(true)}
                         className="w-full text-left backdrop-blur-xl border border-white/15 rounded-2xl px-5 py-4 flex items-center justify-between hover:bg-white/10 transition-colors shadow-[inset_0_-1px_0_rgba(255,255,255,0.06)]"
-                        style={{ background: "transparent" }}
+                        style={{ background: "rgba(255,255,255,0.08)" }}
                       >
                         <div className="flex items-center gap-4">
                           <div className="w-7 h-7 bg-[#e6ff55] rounded-full flex items-center justify-center">
@@ -274,7 +221,7 @@ export default function DepositPage() {
                       {/* Amount input */}
                       <div
                         className="rounded-2xl backdrop-blur-xl border border-white/15 px-5 py-4 flex flex-col justify-center shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_10px_28px_rgba(0,0,0,0.45)]"
-                        style={{ background: "transparent" }}
+                        style={{ background: "rgba(255,255,255,0.08)" }}
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-white text-sm font-medium">Amount</span>
@@ -458,13 +405,13 @@ export default function DepositPage() {
                   >
                     <Button
                       onClick={onConfirmDeposit}
-                      disabled={!canConfirm || depositing}
+                      disabled={!canConfirm || !!confirming}
                       className="w-full flex items-center justify-center gap-2 h-12 px-8 rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold text-sm shadow-[0_10px_30px_rgba(230,255,85,0.3)] hover:brightness-110 transition disabled:opacity-60"
                     >
-                      {depositing ? (
+                      {confirming ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          Depositing...
+                          {confirming === "approve" ? "Approving…" : "Locking…"}
                         </>
                       ) : (
                         <>
@@ -484,11 +431,11 @@ export default function DepositPage() {
                   {successOpen && (
                     <section
                       className="rounded-2xl backdrop-blur-xl border border-white/15 p-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_10px_28px_rgba(0,0,0,0.45)]"
-                      style={{ background: "transparent" }}
+                      style={{ background: "rgba(255,255,255,0.08)" }}
                     >
                       <div className="flex items-start gap-3">
                         <div className="w-10 h-10 rounded-full bg-[#e6ff55] text-[#0a0b0e] flex items-center justify-center">
-                          <CheckCircle2 className="w-6 h-6 text-black" />
+                          🎉
                         </div>
                         <div>
                           <div className="text-white font-semibold">
@@ -500,7 +447,7 @@ export default function DepositPage() {
                           </div>
                           <div className="mt-3 flex items-center gap-2">
                             <Button
-                              onClick={() => router.push("/dashboard")}
+                              onClick={() => router.push("/dash")}
                               className="px-3 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-white hover:bg-white/15 inline-flex items-center gap-2 text-sm"
                             >
                               <ArrowRight className="w-4 h-4" /> Go to Dashboard
@@ -537,7 +484,7 @@ export default function DepositPage() {
                     >
                       <div className="text-white">{r.label}</div>
                       <div className={r.status === "confirmed" ? "text-emerald-300" : "text-yellow-200"}>
-                        {r.status === "confirmed" ? "Confirmed" : "Pending finality"}
+                        {r.status === "confirmed" ? "✅ Confirmed" : "⏳ Pending finality"}
                       </div>
                     </div>
                   ))}
@@ -552,7 +499,7 @@ export default function DepositPage() {
 
         {/* Token selection modal using Dialog */}
         <Dialog open={showTokenModal} onOpenChange={setShowTokenModal}>
-          <DialogContent className="backdrop-blur-3xl border border-white/15 bg-black/60 text-white rounded-2xl">
+          <DialogContent className="border-white/15">
             <DialogHeader>
               <DialogTitle className="text-white">Select Token</DialogTitle>
               <DialogDescription className="text-white">
