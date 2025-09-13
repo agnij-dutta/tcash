@@ -218,7 +218,7 @@ export default function WithdrawPage() {
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => router.push("/dash")}
+                  onClick={() => router.push("/dashboard")}
                   className="px-3 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-white hover:bg-white/15 inline-flex items-center gap-2 text-sm"
                 >
                   <ArrowLeft className="w-4 h-4" /> Dashboard
@@ -685,7 +685,7 @@ export default function WithdrawPage() {
             <div className="flex items-center justify-center gap-4">
               <button
                 className="px-5 py-3 rounded-full bg-white/10 border border-white/10 text-white font-medium hover:bg-white/15 transition-colors"
-                onClick={() => router.push("/dash")}
+                onClick={() => router.push("/dashboard")}
               >
                 Back to Dashboard
               </button>

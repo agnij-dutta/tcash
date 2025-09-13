@@ -216,7 +216,7 @@ export default function DepositPage() {
 
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => router.push("/dash")}
+                    onClick={() => router.push("/dashboard")}
                     className="px-3 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-white hover:bg-white/15 inline-flex items-center gap-2 text-sm"
                   >
                     <ArrowLeft className="w-4 h-4" /> Dashboard
@@ -500,7 +500,7 @@ export default function DepositPage() {
                           </div>
                           <div className="mt-3 flex items-center gap-2">
                             <Button
-                              onClick={() => router.push("/dash")}
+                              onClick={() => router.push("/dashboard")}
                               className="px-3 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-white hover:bg-white/15 inline-flex items-center gap-2 text-sm"
                             >
                               <ArrowRight className="w-4 h-4" /> Go to Dashboard
