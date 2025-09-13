@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
+import { usePublicClient, useWalletClient } from "wagmi"
+import { EERC_ADDRESSES } from "@/lib/eerc-config"
 import {
   Shield,
   Info,
@@ -37,6 +39,8 @@ const FIXED_DENOMS = [100, 500, 1000]
 
 export default function DepositPage() {
   const router = useRouter()
+  const publicClient = usePublicClient()
+  const { data: walletClient } = useWalletClient()
 
   // UI State
   const [showTokenModal, setShowTokenModal] = useState(false)
@@ -48,6 +52,7 @@ export default function DepositPage() {
   const [showVariableFuture, setShowVariableFuture] = useState(false)
 
   const [generatingNote, setGeneratingNote] = useState(false)
+  const [depositing, setDepositing] = useState(false)
   const [noteReady, setNoteReady] = useState(false)
 
   const [confirming, setConfirming] = useState<false | "approve" | "lock">(false)
@@ -93,12 +98,46 @@ export default function DepositPage() {
     }, 1100)
   }
 
-  function onConfirmDeposit() {
-    // 2-step UI-only flow
-    setConfirming("approve")
-    setTimeout(() => setConfirming("lock"), 1200)
-    setTimeout(() => {
-      setConfirming(false)
+  async function onConfirmDeposit() {
+    if (!walletClient || !publicClient) return
+    
+    try {
+      setDepositing(true)
+      const account = walletClient.account?.address as `0x${string}`
+      
+      // Sign message for key derivation
+      const message = `eERC\nDepositing ${amount} ${selectedToken.symbol}\nAddress:${account.toLowerCase()}`
+      const signature = await walletClient.signMessage({ account, message })
+      
+      // Get deposit calldata from server
+      const res = await fetch('/api/eerc/deposit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user: account,
+          signature,
+          token: EERC_ADDRESSES.testERC20,
+          amount: (parseFloat(amount) * 1e18).toString(), // Convert to wei
+        })
+      })
+      
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || 'Deposit failed')
+      }
+      
+      const { calldata } = await res.json()
+      
+      // Send transaction to EERC contract
+      const hash = await walletClient.sendTransaction({ 
+        account, 
+        to: EERC_ADDRESSES.encryptedERC as `0x${string}`, 
+        data: calldata as `0x${string}` 
+      })
+      
+      // Wait for confirmation
+      await publicClient.waitForTransactionReceipt({ hash })
+      
       setSuccessOpen(true)
       // update local recent log
       setRecent((prev) => [
@@ -108,7 +147,12 @@ export default function DepositPage() {
         },
         ...prev.slice(0, 4),
       ])
-    }, 2400)
+    } catch (e: any) {
+      console.error('Deposit error:', e)
+      alert(`Deposit failed: ${e.message}`)
+    } finally {
+      setDepositing(false)
+    }
   }
 
   const stealthAddress = "0xStealth...abcd"
@@ -405,13 +449,13 @@ export default function DepositPage() {
                   >
                     <Button
                       onClick={onConfirmDeposit}
-                      disabled={!canConfirm || !!confirming}
+                      disabled={!canConfirm || depositing}
                       className="w-full flex items-center justify-center gap-2 h-12 px-8 rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold text-sm shadow-[0_10px_30px_rgba(230,255,85,0.3)] hover:brightness-110 transition disabled:opacity-60"
                     >
-                      {confirming ? (
+                      {depositing ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          {confirming === "approve" ? "Approving…" : "Locking…"}
+                          Depositing...
                         </>
                       ) : (
                         <>

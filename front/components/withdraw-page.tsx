@@ -539,7 +539,7 @@ export default function WithdrawPage() {
                     <button
                       onClick={onConfirmWithdraw}
                       disabled={!canConfirm || withdrawing}
-                      className="w-full h-14 px-8 bg-[#e6ff55] text-[#0a0b0e] font-bold text-base rounded-full hover:brightness-110 transition-all duration-200 shadow-[0_10px_30px_rgba(230,255,85,0.3)] disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+                      className="w-full h-14 px-8 bg-[#e6ff55] text-[#0a0b0e] font-bold text-base rounded-full hover:brightness-110 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
                     >
                       {withdrawing ? (
                         <>
