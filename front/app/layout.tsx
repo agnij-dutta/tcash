@@ -50,7 +50,7 @@ export default function RootLayout({
         </svg>
         <div className="fixed inset-0 z-0">
           <LiquidEther
-            colors={["#5227FF", "#FF9FFC", "#B19EEF"]}
+            colors={["#ffffff", "#d4d4d4", "#737373"]}
             mouseForce={20}
             cursorSize={100}
             isViscous={false}
