@@ -552,7 +552,7 @@ export default function DepositPage() {
 
         {/* Token selection modal using Dialog */}
         <Dialog open={showTokenModal} onOpenChange={setShowTokenModal}>
-          <DialogContent className="border-white/15">
+          <DialogContent className="backdrop-blur-3xl border border-white/15 bg-black/60 text-white rounded-2xl">
             <DialogHeader>
               <DialogTitle className="text-white">Select Token</DialogTitle>
               <DialogDescription className="text-white">

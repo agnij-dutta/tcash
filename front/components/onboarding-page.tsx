@@ -665,7 +665,7 @@ export default function OnboardingPage() {
 
         {/* Lightweight finish dialog */}
         <Dialog open={finishing} onOpenChange={setFinishing}>
-          <DialogContent className="border-white/15">
+          <DialogContent className="backdrop-blur-3xl border border-white/15 bg-black/60 text-white rounded-2xl">
             <DialogHeader>
               <DialogTitle className="text-white">All set</DialogTitle>
               <DialogDescription className="text-white/70">
