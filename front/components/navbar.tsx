@@ -22,42 +22,42 @@ export default function Navbar() {
             <div className="flex items-center gap-6">
               <button
                 onClick={() => router.push("/")}
-                className="flex items-center gap-2 text-sm transition-colors px-3 py-2 rounded-lg text-white hover:text-[#FF9FFC] hover:bg-white/10"
+                className="flex items-center gap-2 text-sm transition-colors px-3 py-2 rounded-lg text-white hover:text-[#E8CFEA] hover:bg-white/10"
               >
                 <Home className="w-4 h-4" />
                 Home
               </button>
               <button
                 onClick={() => router.push("/deposit")}
-                className="flex items-center gap-2 text-sm transition-colors px-3 py-2 rounded-lg text-white hover:text-[#FF9FFC] hover:bg-white/10"
+                className="flex items-center gap-2 text-sm transition-colors px-3 py-2 rounded-lg text-white hover:text-[#E8CFEA] hover:bg-white/10"
               >
                 <Plus className="w-4 h-4" />
                 Deposit
               </button>
               <button
                 onClick={() => router.push("/withdraw")}
-                className="flex items-center gap-2 text-sm transition-colors px-3 py-2 rounded-lg text-white hover:text-[#FF9FFC] hover:bg-white/10"
+                className="flex items-center gap-2 text-sm transition-colors px-3 py-2 rounded-lg text-white hover:text-[#E8CFEA] hover:bg-white/10"
               >
                 <Minus className="w-4 h-4" />
                 Withdraw
               </button>
               <button
                 onClick={() => router.push("/swap")}
-                className="flex items-center gap-2 text-sm transition-colors px-3 py-2 rounded-lg text-white hover:text-[#FF9FFC] hover:bg-white/10"
+                className="flex items-center gap-2 text-sm transition-colors px-3 py-2 rounded-lg text-white hover:text-[#E8CFEA] hover:bg-white/10"
               >
                 <ArrowLeftRight className="w-4 h-4" />
                 Swap
               </button>
               <button
                 onClick={() => router.push("/dashboard")}
-                className="flex items-center gap-2 text-sm transition-colors px-3 py-2 rounded-lg text-white hover:text-[#FF9FFC] hover:bg-white/10"
+                className="flex items-center gap-2 text-sm transition-colors px-3 py-2 rounded-lg text-white hover:text-[#E8CFEA] hover:bg-white/10"
               >
                 <BarChart3 className="w-4 h-4" />
                 Dashboard
               </button>
               <button
                 onClick={() => router.push("/onboarding")}
-                className="flex items-center gap-2 text-sm transition-colors px-4 py-2 rounded-lg bg-[#FF9FFC] text-black hover:bg-[#B19EEF] hover:text-white font-medium"
+                className="flex items-center gap-2 text-sm transition-colors px-4 py-2 rounded-lg border border-[#FF9FFC]/25 bg-[#FF9FFC]/10 text-[#FF9FFC] hover:bg-[#FF9FFC]/15 hover:text-white font-medium"
               >
                 <User className="w-4 h-4" />
                 Get Started
