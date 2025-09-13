@@ -1,9 +1,8 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { useAccount } from "wagmi"
-import { useEERC } from "@/hooks/useEERC"
-import { useEncryptedBalance } from "@/hooks/useEncryptedBalance"
+import { useHardcodedWallet } from "@/hooks/useHardcodedWallet"
+import { useDirectEERC } from "@/hooks/useDirectEERC"
 import {
   ArrowUpDown,
   ChevronDown,
@@ -18,9 +17,8 @@ import {
 import LiquidEther from "./liquid-ether"
 
 export default function TsunamiSwap() {
-  const { address, isConnected } = useAccount()
-  const { isInitialized, isRegistered } = useEERC()
-  const { balanceInTokens, privateTransfer, refetchBalance } = useEncryptedBalance()
+  const { address, isConnected } = useHardcodedWallet()
+  const { isInitialized, isRegistered, balanceInTokens, privateTransfer, refetchBalance } = useDirectEERC()
 
   const tokenList = useMemo(
     () => [
@@ -61,7 +59,7 @@ export default function TsunamiSwap() {
     }
     const est = amt * price
     setToAmount(est.toLocaleString(undefined, { maximumFractionDigits: 6 }))
-    setInsufficientBalance(amt > fromToken.balance)
+    setInsufficientBalance(amt > Number(fromToken.balance))
   }, [fromAmount, price, fromToken])
 
   const filteredTokens = useMemo(() => {
@@ -124,7 +122,7 @@ export default function TsunamiSwap() {
       
       // For now, we'll simulate a transfer to the same address (self-transfer)
       // In a real implementation, this would be a proper swap through Uniswap
-      const result = await privateTransfer(address!, amountInWei, `Swapped ${amt} ${fromToken.symbol} to ${toToken.symbol}`)
+      const result = await privateTransfer(address!, amountInWei.toString())
       
       addToast("Proof generated successfully")
       addToast("Transaction submitted to PrivacyRouter")

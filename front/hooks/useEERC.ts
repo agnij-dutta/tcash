@@ -1,13 +1,12 @@
 "use client"
 
-import { usePublicClient, useWalletClient } from "wagmi"
 import { useEERC as useEERCSDK } from "@avalabs/eerc-sdk"
 import { CONTRACT_ADDRESSES, CIRCUIT_URLS } from "@/config/contracts"
 import { useEffect, useState } from "react"
+import { useHardcodedWallet } from "./useHardcodedWallet"
 
 export function useEERC() {
-  const publicClient = usePublicClient()
-  const { data: walletClient } = useWalletClient()
+  const { publicClient, walletClient, isConnected } = useHardcodedWallet()
   const [decryptionKey, setDecryptionKey] = useState<string | undefined>()
 
   // Initialize eERC SDK
@@ -26,9 +25,40 @@ export function useEERC() {
       hasWalletClient: !!walletClient,
       hasDecryptionKey: !!decryptionKey,
       isInitialized: eERC.isInitialized,
-      contractAddress: CONTRACT_ADDRESSES.eERC
+      contractAddress: CONTRACT_ADDRESSES.eERC,
+      circuitUrls: CIRCUIT_URLS,
+      eERCKeys: Object.keys(eERC)
     })
   }, [publicClient, walletClient, decryptionKey, eERC.isInitialized])
+
+  // Test circuit file accessibility
+  useEffect(() => {
+    if (publicClient && walletClient) {
+      console.log("Testing circuit file accessibility...")
+      fetch('/circuits/registration/registration.wasm')
+        .then(response => {
+          console.log("Registration WASM accessible:", response.ok, response.status)
+          return response.blob()
+        })
+        .then(blob => {
+          console.log("Registration WASM size:", blob.size)
+        })
+        .catch(error => {
+          console.error("Failed to fetch registration WASM:", error)
+        })
+    }
+  }, [publicClient, walletClient])
+
+  // Add timeout for initialization
+  useEffect(() => {
+    if (publicClient && walletClient && !eERC.isInitialized) {
+      const timeout = setTimeout(() => {
+        console.warn("eERC SDK initialization timeout - this might indicate a configuration issue")
+      }, 10000) // 10 second timeout
+
+      return () => clearTimeout(timeout)
+    }
+  }, [publicClient, walletClient, eERC.isInitialized])
 
   // Load decryption key from localStorage on mount
   useEffect(() => {
@@ -69,7 +99,7 @@ export function useEERC() {
     ...eERC,
     register: handleRegister,
     generateDecryptionKey: handleGenerateDecryptionKey,
-    isConnected: !!walletClient,
+    isConnected,
     isInitialized: eERC.isInitialized && !!publicClient && !!walletClient,
   }
 }

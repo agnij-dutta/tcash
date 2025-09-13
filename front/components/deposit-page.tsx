@@ -2,9 +2,8 @@
 
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAccount } from "wagmi"
-import { useEERC } from "@/hooks/useEERC"
-import { useEncryptedBalance } from "@/hooks/useEncryptedBalance"
+import { useHardcodedWallet } from "@/hooks/useHardcodedWallet"
+import { useDirectEERC } from "@/hooks/useDirectEERC"
 import {
   Shield,
   Info,
@@ -31,23 +30,44 @@ type PublicToken = {
 }
 
 const PUBLIC_TOKENS: PublicToken[] = [
+  { symbol: "AVAX", name: "Avalanche", priceUsd: 25, balance: 100 },
   { symbol: "USDC", name: "USD Coin", priceUsd: 1, balance: 2350 },
   { symbol: "DAI", name: "DAI Stablecoin", priceUsd: 1, balance: 1840 },
-  { symbol: "ETH", name: "Ethereum", priceUsd: 1600, balance: 1.23 },
 ]
 
-const FIXED_DENOMS = [100, 500, 1000]
+const FIXED_DENOMS = [1, 5, 10] // Test token amounts
 
 export default function DepositPage() {
   const router = useRouter()
-  const { address, isConnected } = useAccount()
-  const { isInitialized, isRegistered } = useEERC()
-  const { deposit, refetchBalance } = useEncryptedBalance()
+  const { address, isConnected } = useHardcodedWallet()
+  const { 
+    isInitialized, 
+    isRegistered, 
+    deposit, 
+    refetchBalance, 
+    erc20Balance, 
+    erc20Symbol, 
+    erc20Decimals,
+    approve 
+  } = useDirectEERC()
 
   // UI State
   const [showTokenModal, setShowTokenModal] = useState(false)
   const [tokenQuery, setTokenQuery] = useState("")
-  const [selectedToken, setSelectedToken] = useState<PublicToken>(PUBLIC_TOKENS[0])
+  
+  // Create dynamic token list with real balance data
+  const availableTokens = useMemo(() => [
+    { 
+      symbol: erc20Symbol || "TEST", 
+      name: "Test Token", 
+      priceUsd: 1, 
+      balance: parseFloat(erc20Balance || "0") / Math.pow(10, erc20Decimals || 18) 
+    },
+    { symbol: "USDC", name: "USD Coin", priceUsd: 1, balance: 0 },
+    { symbol: "DAI", name: "DAI Stablecoin", priceUsd: 1, balance: 0 },
+  ], [erc20Balance, erc20Decimals, erc20Symbol])
+  
+  const [selectedToken, setSelectedToken] = useState<PublicToken>(availableTokens[0])
 
   const [amount, setAmount] = useState<string>("")
   const [denom, setDenom] = useState<number | "">("")
@@ -73,9 +93,9 @@ export default function DepositPage() {
 
   const filteredTokens = useMemo(() => {
     const q = tokenQuery.trim().toLowerCase()
-    if (!q) return PUBLIC_TOKENS
-    return PUBLIC_TOKENS.filter((t) => t.symbol.toLowerCase().includes(q) || t.name.toLowerCase().includes(q))
-  }, [tokenQuery])
+    if (!q) return availableTokens
+    return availableTokens.filter((t) => t.symbol.toLowerCase().includes(q) || t.name.toLowerCase().includes(q))
+  }, [tokenQuery, availableTokens])
 
   function onSelectToken(t: PublicToken) {
     setSelectedToken(t)
@@ -110,13 +130,18 @@ export default function DepositPage() {
       setIsDepositing(true)
       setConfirming("approve")
       
-      // Convert amount to wei (assuming 18 decimals for now)
-      const amountInWei = BigInt(Math.floor(numericAmount * Math.pow(10, 18)))
+      // Convert amount to wei using the correct decimals for the ERC20 token
+      const amountInWei = BigInt(Math.floor(numericAmount * Math.pow(10, erc20Decimals || 18)))
       
-      // Call the real eERC deposit function
-      const result = await deposit(amountInWei, `Deposited ${numericAmount} ${selectedToken.symbol}`)
+      // First approve the eERC contract to spend tokens
+      console.log("Approving tokens for eERC contract...")
+      await approve()
       
       setConfirming("lock")
+      
+      // Then deposit the tokens
+      console.log("Depositing tokens to eERC...")
+      const result = await deposit(amountInWei.toString())
       
       // Update recent transactions
       setRecent((prev) => [
@@ -370,7 +395,7 @@ export default function DepositPage() {
                   >
                     <div className="text-white text-base font-semibold mb-2">Privacy Settings</div>
                     <div className="text-sm text-white">
-                      Currently only fixed deposit sizes (100, 500, 1,000 {selectedToken.symbol}).
+                      Currently only fixed deposit sizes (1, 5, 10 {selectedToken.symbol}).
                     </div>
 
                     <div className="mt-4 grid grid-cols-3 gap-2">

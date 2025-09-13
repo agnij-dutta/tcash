@@ -16,10 +16,8 @@ import {
 } from "lucide-react"
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAccount } from "wagmi"
-import { useEERC } from "@/hooks/useEERC"
-import { useEncryptedBalance } from "@/hooks/useEncryptedBalance"
-import { WalletConnect } from "@/components/wallet-connect"
+import { useDirectEERC } from "@/hooks/useDirectEERC"
+import { useHardcodedWallet } from "@/hooks/useHardcodedWallet"
 
 type TokenRow = {
   symbol: string
@@ -30,22 +28,17 @@ type TokenRow = {
 
 export default function TsunamiDashboard() {
   const router = useRouter()
-  const { address, isConnected } = useAccount()
+  const { address, isConnected } = useHardcodedWallet()
   const { 
     isInitialized, 
     isRegistered, 
-    register
-  } = useEERC()
-  const { 
     decryptedBalance, 
     balanceInTokens,
-    privateMint,
-    privateBurn,
     privateTransfer,
     withdraw,
     deposit,
     refetchBalance
-  } = useEncryptedBalance()
+  } = useDirectEERC()
   
   const [showBalances, setShowBalances] = useState(true)
   const [hasZkAttestation, setHasZkAttestation] = useState<boolean>(true)
@@ -113,9 +106,8 @@ export default function TsunamiDashboard() {
       <div className="relative min-h-screen w-full overflow-hidden flex flex-col font-sans items-center justify-center">
         <div className="text-center">
           <Shield className="w-16 h-16 text-white/60 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-2">Connect Your Wallet</h2>
-          <p className="text-white/60 mb-6">Please connect your wallet to access the dashboard</p>
-          <WalletConnect />
+          <h2 className="text-2xl font-bold text-white mb-2">Initializing Wallet</h2>
+          <p className="text-white/60 mb-6">Please wait while we initialize your wallet</p>
         </div>
       </div>
     )
@@ -130,7 +122,7 @@ export default function TsunamiDashboard() {
           <h2 className="text-2xl font-bold text-white mb-2">Register for eERC</h2>
           <p className="text-white/60 mb-6">You need to register with the eERC protocol to start using private tokens</p>
           <button
-            onClick={register}
+            onClick={() => {}}
             className="px-6 py-3 rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold hover:brightness-110 transition-all"
           >
             Register Now

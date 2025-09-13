@@ -1,14 +1,14 @@
-// Contract addresses from your deployment
+// Contract addresses from deployed converter contracts on Fuji testnet
 export const CONTRACT_ADDRESSES = {
-  eERC: '0xf8a046309a39A9E7C31BeA40256225332376b836',
-  registrar: '0x420058F5FB767773150d1a6987bCf10f4EA088aC',
-  babyJubJub: '0xd7e2472447604DbEB303930379C9A0F16B328C5A',
-  erc20: '0x64230e8A79EF26ADc0a5bd6BeA06fa08311F2d17',
+  eERC: '0x271B03d3A18b2270764669EDa1696f0b43634764', // EncryptedERC
+  registrar: '0x698CDfd5d082D6c796cFCe24f78aF77400BD149d',
+  babyJubJub: '0x6F1290E2ee936f6a24a6eAa8B090Cea6DC733ae9',
+  erc20: '0x7dF4f65Df627E53d1fb12CF5c4895E1ceB861c71', // TestERC20
   verifiers: {
-    registration: '0x6F212fEc35A4872a9475bd92CA370a6ea004A1AE',
-    mint: '0x137821E5B2dAb864B00cd56A03f61ACc9FB80854',
-    withdraw: '0x6918e91a0C7776041CB4787E8606B572a6C9E99b',
-    transfer: '0xA15404225102e1C386E578618911816097E23De6'
+    registration: '0x652902f169274A4D3019c47fbBB84282F238b7C6',
+    mint: '0x95f229A96d46ae87C382240fbAA1fd707F43D4DA',
+    withdraw: '0x4F29f555F373Dc0Dab5585a645fcEadf24012E74',
+    transfer: '0xbDa482D4dB5F7930c152D3316dcDD59D039f4ce5'
   }
 } as const
 
@@ -16,31 +16,31 @@ export const CONTRACT_ADDRESSES = {
 // These should point to the actual circuit files from the EncryptedERC repository
 export const CIRCUIT_URLS = {
   register: {
-    wasm: '/circuits/registration.wasm',
-    zkey: '/circuits/registration.zkey'
+    wasm: '/circuits/registration/registration.wasm',
+    zkey: '/circuits/registration/circuit_final.zkey'
   },
   transfer: {
-    wasm: '/circuits/transfer.wasm',
-    zkey: '/circuits/transfer.zkey'
+    wasm: '/circuits/transfer/transfer.wasm',
+    zkey: '/circuits/transfer/circuit_final.zkey'
   },
   mint: {
-    wasm: '/circuits/mint.wasm',
-    zkey: '/circuits/mint.zkey'
+    wasm: '/circuits/mint/mint.wasm',
+    zkey: '/circuits/mint/circuit_final.zkey'
   },
   withdraw: {
-    wasm: '/circuits/withdraw.wasm',
-    zkey: '/circuits/withdraw.zkey'
+    wasm: '/circuits/withdraw/withdraw.wasm',
+    zkey: '/circuits/withdraw/circuit_final.zkey'
   },
   burn: {
-    wasm: '/circuits/burn.wasm',
-    zkey: '/circuits/burn.zkey'
+    wasm: '/circuits/burn/burn.wasm',
+    zkey: '/circuits/burn/circuit_final.zkey'
   }
 } as const
 
 // Network configuration
 export const NETWORK_CONFIG = {
-  chainId: 43114, // Avalanche Mainnet
-  name: 'Avalanche',
-  rpcUrl: 'https://api.avax.network/ext/bc/C/rpc',
-  blockExplorer: 'https://snowtrace.io'
+  chainId: 43113, // Avalanche Fuji Testnet
+  name: 'Avalanche Fuji',
+  rpcUrl: 'https://api.avax-test.network/ext/bc/C/rpc',
+  blockExplorer: 'https://testnet.snowtrace.io'
 } as const

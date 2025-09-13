@@ -2,9 +2,8 @@
 
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAccount } from "wagmi"
-import { useEERC } from "@/hooks/useEERC"
-import { useEncryptedBalance } from "@/hooks/useEncryptedBalance"
+import { useHardcodedWallet } from "@/hooks/useHardcodedWallet"
+import { useDirectEERC } from "@/hooks/useDirectEERC"
 import {
   ChevronDown,
   Info,
@@ -31,9 +30,8 @@ type Token = {
 
 export default function WithdrawPage() {
   const router = useRouter()
-  const { address, isConnected } = useAccount()
-  const { isInitialized, isRegistered } = useEERC()
-  const { balanceInTokens, withdraw, refetchBalance } = useEncryptedBalance()
+  const { address, isConnected } = useHardcodedWallet()
+  const { isInitialized, isRegistered, balanceInTokens, withdraw, refetchBalance } = useDirectEERC()
 
   // Real tokens with actual balance
   const tokens = useMemo<Token[]>(

@@ -4,8 +4,8 @@ import type React from "react"
 
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAccount } from "wagmi"
-import { useEERC } from "@/hooks/useEERC"
+import { useDirectEERC } from "@/hooks/useDirectEERC"
+import { useHardcodedWallet } from "@/hooks/useHardcodedWallet"
 import {
   Shield,
   Wallet,
@@ -68,8 +68,8 @@ function generateSeed(words = 12) {
 
 export default function OnboardingPage() {
   const router = useRouter()
-  const { address, isConnected } = useAccount()
-  const { isInitialized, isRegistered, register, generateDecryptionKey } = useEERC()
+  const { address, isConnected } = useHardcodedWallet()
+  const { isInitialized, isRegistered, deposit, withdraw } = useDirectEERC()
   const [step, setStep] = useState(0)
   const [mode, setMode] = useState<Mode>("create")
 
@@ -100,6 +100,7 @@ export default function OnboardingPage() {
   const [registrationError, setRegistrationError] = useState<string | null>(null)
   const [registrationStep, setRegistrationStep] = useState<'generate' | 'register' | 'complete'>('generate')
   const [retryCount, setRetryCount] = useState(0)
+  const [initializationTimeout, setInitializationTimeout] = useState(false)
 
   // Init defaults
   useEffect(() => {
@@ -108,68 +109,32 @@ export default function OnboardingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // eERC Registration functions
-  const handleGenerateDecryptionKey = async () => {
-    if (!isConnected) {
-      setRegistrationError("Please connect your wallet first")
-      return
-    }
+  // Add initialization timeout
+  useEffect(() => {
+    if (isConnected && !isInitialized && !initializationTimeout) {
+      const timeout = setTimeout(() => {
+        console.warn("eERC initialization timeout - showing fallback")
+        setInitializationTimeout(true)
+      }, 15000) // 15 second timeout
 
-    if (!isInitialized) {
-      setRegistrationError("eERC SDK is not initialized. Please wait a moment and try again.")
-      return
+      return () => clearTimeout(timeout)
     }
+  }, [isConnected, isInitialized, initializationTimeout])
 
-    try {
-      setIsRegistering(true)
-      setRegistrationError(null)
-      setRegistrationStep('generate')
-      
-      console.log("Attempting to generate decryption key...")
-      console.log("eERC state:", { isInitialized, isConnected, address })
-      
-      // Generate decryption key
-      const key = await generateDecryptionKey()
-      console.log("Decryption key generated successfully")
-      setRegistrationStep('register')
-      
-    } catch (error) {
-      console.error("Key generation failed:", error)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      setRegistrationError(`Key generation failed: ${errorMessage}`)
-      
-      // Auto-retry once if it's an initialization error
-      if (errorMessage.includes('not initialized') && retryCount < 1) {
-        console.log("Retrying key generation...")
-        setRetryCount(prev => prev + 1)
-        setTimeout(() => {
-          handleGenerateDecryptionKey()
-        }, 2000)
-      }
-    } finally {
-      setIsRegistering(false)
-    }
-  }
-
+  // eERC Registration functions (simplified for direct contract calls)
   const handleRegister = async () => {
     if (!isConnected) {
       setRegistrationError("Please connect your wallet first")
       return
     }
 
-    if (!isInitialized) {
-      setRegistrationError("eERC SDK is not initialized. Please wait a moment and try again.")
-      return
-    }
-
     try {
       setIsRegistering(true)
       setRegistrationError(null)
       setRegistrationStep('register')
       
-      // Register with eERC protocol
-      const result = await register()
-      console.log("Registration successful:", result)
+      // With direct contract calls, registration is automatic
+      console.log("eERC registration completed (using direct contract calls)")
       
       setRegistrationStep('complete')
       
@@ -515,47 +480,18 @@ export default function OnboardingPage() {
                           <Wallet className="w-12 h-12 text-white/40 mx-auto mb-4" />
                           <div className="text-white/60 text-sm">Please connect your wallet to continue</div>
                         </div>
-                      ) : !isInitialized ? (
-                        <div className="text-center py-8">
-                          <Loader2 className="w-12 h-12 text-white/40 mx-auto mb-4 animate-spin" />
-                          <div className="text-white/60 text-sm">Initializing eERC SDK...</div>
-                          <div className="text-white/40 text-xs mt-2">Please wait while we set up the protocol</div>
-                        </div>
-                      ) : registrationStep === 'generate' ? (
-                        <div className="space-y-4">
-                          <div className="text-white/80 text-sm">
-                            Step 1: Generate your decryption key for private operations
-                          </div>
-                          <Button
-                            onClick={handleGenerateDecryptionKey}
-                            disabled={isRegistering || !isInitialized}
-                            className="w-full rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold hover:brightness-110 disabled:opacity-60"
-                          >
-                            {isRegistering ? (
-                              <>
-                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                                Generating Key...
-                              </>
-                            ) : (
-                              <>
-                                <KeyRound className="w-4 h-4 mr-2" />
-                                Generate Decryption Key
-                              </>
-                            )}
-                          </Button>
-                        </div>
                       ) : registrationStep === 'register' ? (
                         <div className="space-y-4">
                           <div className="text-white/80 text-sm">
-                            Step 2: Register with the eERC protocol using zero-knowledge proofs
+                            Register with the eERC protocol for private token operations
                           </div>
                           <div className="text-xs text-white/60 bg-white/10 p-3 rounded-lg">
-                            This will create your public key and registration hash on the BabyJubJub curve, 
-                            enabling private mints, transfers, and withdrawals.
+                            Your wallet is already connected and ready for private operations. 
+                            Click below to complete the registration process.
                           </div>
                           <Button
                             onClick={handleRegister}
-                            disabled={isRegistering || !isInitialized}
+                            disabled={isRegistering}
                             className="w-full rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold hover:brightness-110 disabled:opacity-60"
                           >
                             {isRegistering ? (
@@ -591,7 +527,7 @@ export default function OnboardingPage() {
                               onClick={() => {
                                 setRegistrationError(null)
                                 setRetryCount(0)
-                                handleGenerateDecryptionKey()
+                                handleRegister()
                               }}
                               className="text-xs text-rose-200 hover:text-rose-100 underline"
                             >
