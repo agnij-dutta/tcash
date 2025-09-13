@@ -38,7 +38,13 @@ export default function TsunamiDashboard() {
   } = useEERC()
   const { 
     decryptedBalance, 
-    balanceInTokens
+    balanceInTokens,
+    privateMint,
+    privateBurn,
+    privateTransfer,
+    withdraw,
+    deposit,
+    refetchBalance
   } = useEncryptedBalance()
   
   const [showBalances, setShowBalances] = useState(true)

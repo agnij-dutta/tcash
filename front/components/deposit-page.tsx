@@ -2,6 +2,9 @@
 
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useAccount } from "wagmi"
+import { useEERC } from "@/hooks/useEERC"
+import { useEncryptedBalance } from "@/hooks/useEncryptedBalance"
 import {
   Shield,
   Info,
@@ -37,6 +40,9 @@ const FIXED_DENOMS = [100, 500, 1000]
 
 export default function DepositPage() {
   const router = useRouter()
+  const { address, isConnected } = useAccount()
+  const { isInitialized, isRegistered } = useEERC()
+  const { deposit, refetchBalance } = useEncryptedBalance()
 
   // UI State
   const [showTokenModal, setShowTokenModal] = useState(false)
@@ -52,6 +58,7 @@ export default function DepositPage() {
 
   const [confirming, setConfirming] = useState<false | "approve" | "lock">(false)
   const [successOpen, setSuccessOpen] = useState(false)
+  const [isDepositing, setIsDepositing] = useState(false)
 
   const [recent, setRecent] = useState<{ label: string; status: "confirmed" | "pending" }[]>([
     { label: "500 USDC → 500 eUSDC", status: "confirmed" },
@@ -93,14 +100,25 @@ export default function DepositPage() {
     }, 1100)
   }
 
-  function onConfirmDeposit() {
-    // 2-step UI-only flow
-    setConfirming("approve")
-    setTimeout(() => setConfirming("lock"), 1200)
-    setTimeout(() => {
-      setConfirming(false)
-      setSuccessOpen(true)
-      // update local recent log
+  async function onConfirmDeposit() {
+    if (!isConnected || !isRegistered) {
+      alert("Please connect your wallet and register with eERC first")
+      return
+    }
+
+    try {
+      setIsDepositing(true)
+      setConfirming("approve")
+      
+      // Convert amount to wei (assuming 18 decimals for now)
+      const amountInWei = BigInt(Math.floor(numericAmount * Math.pow(10, 18)))
+      
+      // Call the real eERC deposit function
+      const result = await deposit(amountInWei, `Deposited ${numericAmount} ${selectedToken.symbol}`)
+      
+      setConfirming("lock")
+      
+      // Update recent transactions
       setRecent((prev) => [
         {
           label: `${numericAmount} ${selectedToken.symbol} → ${numericAmount} e${selectedToken.symbol}`,
@@ -108,7 +126,20 @@ export default function DepositPage() {
         },
         ...prev.slice(0, 4),
       ])
-    }, 2400)
+      
+      // Refresh balance
+      await refetchBalance()
+      
+      setConfirming(false)
+      setSuccessOpen(true)
+      
+    } catch (error) {
+      console.error("Deposit failed:", error)
+      alert(`Deposit failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      setConfirming(false)
+    } finally {
+      setIsDepositing(false)
+    }
   }
 
   const stealthAddress = "0xStealth...abcd"
@@ -414,13 +445,13 @@ export default function DepositPage() {
                   >
                     <Button
                       onClick={onConfirmDeposit}
-                      disabled={!canConfirm || !!confirming}
+                      disabled={!canConfirm || !!confirming || isDepositing}
                       className="w-full flex items-center justify-center gap-2 h-12 px-8 rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold text-sm hover:brightness-110 transition disabled:opacity-60"
                     >
-                      {confirming ? (
+                      {confirming || isDepositing ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          {confirming === "approve" ? "Approving…" : "Locking…"}
+                          {confirming === "approve" ? "Approving…" : confirming === "lock" ? "Depositing…" : "Processing…"}
                         </>
                       ) : (
                         <>

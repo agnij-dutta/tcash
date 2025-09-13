@@ -2,6 +2,9 @@
 
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useAccount } from "wagmi"
+import { useEERC } from "@/hooks/useEERC"
+import { useEncryptedBalance } from "@/hooks/useEncryptedBalance"
 import {
   ChevronDown,
   Info,
@@ -28,14 +31,18 @@ type Token = {
 
 export default function WithdrawPage() {
   const router = useRouter()
-  // Mock tokens, balances, and prices (frontend only)
+  const { address, isConnected } = useAccount()
+  const { isInitialized, isRegistered } = useEERC()
+  const { balanceInTokens, withdraw, refetchBalance } = useEncryptedBalance()
+
+  // Real tokens with actual balance
   const tokens = useMemo<Token[]>(
     () => [
-      { symbol: "eUSDC", name: "Encrypted USD Coin", balance: 1250, priceUsd: 1 },
-      { symbol: "eDAI", name: "Encrypted DAI", balance: 640, priceUsd: 1 },
-      { symbol: "eETH", name: "Encrypted ETH", balance: 0.75, priceUsd: 1600 },
+      { symbol: "eUSDC", name: "Encrypted USD Coin", balance: balanceInTokens, priceUsd: 1 },
+      { symbol: "eDAI", name: "Encrypted DAI", balance: 0, priceUsd: 1 },
+      { symbol: "eETH", name: "Encrypted ETH", balance: 0, priceUsd: 1600 },
     ],
-    [],
+    [balanceInTokens],
   )
 
   // UI State
@@ -107,14 +114,34 @@ export default function WithdrawPage() {
     setTimeout(() => setProofCopied(false), 1500)
   }
 
-  function onConfirmWithdraw() {
-    // Two-step confirmation flow (frontend only)
-    setConfirming("verify")
-    setTimeout(() => setConfirming("execute"), 1200)
-    setTimeout(() => {
+  async function onConfirmWithdraw() {
+    if (!isConnected || !isRegistered) {
+      alert("Please connect your wallet and register with eERC first")
+      return
+    }
+
+    try {
+      setConfirming("verify")
+      
+      // Convert amount to wei (assuming 18 decimals for now)
+      const amountInWei = BigInt(Math.floor(numericAmount * Math.pow(10, 18)))
+      
+      setConfirming("execute")
+      
+      // Call the real eERC withdraw function
+      const result = await withdraw(amountInWei, `Withdrew ${numericAmount} ${selectedToken.symbol}`)
+      
+      // Refresh balance
+      await refetchBalance()
+      
       setConfirming(false)
       setSuccessOpen(true)
-    }, 2400)
+      
+    } catch (error) {
+      console.error("Withdraw failed:", error)
+      alert(`Withdraw failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      setConfirming(false)
+    }
   }
 
   return (
