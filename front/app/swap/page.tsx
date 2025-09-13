@@ -125,7 +125,17 @@ export default function TsunamiSwap() {
   }
 
   return (
-    <div className="relative min-h-[calc(100vh-7rem)] w-full overflow-hidden flex flex-col items-center justify-center">
+    <div className="relative min-h-screen w-full overflow-hidden flex flex-col items-center pt-24 md:pt-28">
+      {/* Local metallic gradient defs */}
+      <svg aria-hidden="true" width="0" height="0" className="absolute">
+        <defs>
+          <linearGradient id="metallic-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="45%" stopColor="#d4d4d4" />
+            <stop offset="100%" stopColor="#737373" />
+          </linearGradient>
+        </defs>
+      </svg>
       {/* Background image */}
       <div
         className="pointer-events-none absolute inset-0"
@@ -180,7 +190,7 @@ export default function TsunamiSwap() {
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-8">
                 <div className="flex items-center gap-3">
-                  <button className="text-white text-xl font-bold tracking-wide">Swap</button>
+                  <button className="text-xl font-light tracking-tight bg-gradient-to-b from-white via-zinc-300 to-zinc-500 bg-clip-text text-transparent">Swap</button>
                 </div>
               </div>
               <div className="flex items-center gap-2 sm:gap-3">

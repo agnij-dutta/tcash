@@ -37,7 +37,17 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} font-sans bg-black text-white`}>
+      <body className={`${inter.variable} font-sans bg-black text-white tz-metal min-h-screen overflow-x-hidden`}>
+        {/* Global metallic gradient defs for strokes and text backgrounds */}
+        <svg aria-hidden="true" width="0" height="0" className="absolute">
+          <defs>
+            <linearGradient id="metallic-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="45%" stopColor="#d4d4d4" />
+              <stop offset="100%" stopColor="#737373" />
+            </linearGradient>
+          </defs>
+        </svg>
         <div className="fixed inset-0 z-0">
           <LiquidEther
             colors={["#5227FF", "#FF9FFC", "#B19EEF"]}

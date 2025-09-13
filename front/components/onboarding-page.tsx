@@ -219,6 +219,16 @@ export default function OnboardingPage() {
   return (
     <TooltipProvider>
       <div className="relative min-h-screen w-full overflow-hidden flex flex-col items-center">
+        {/* Local metallic gradient defs */}
+        <svg aria-hidden="true" width="0" height="0" className="absolute">
+          <defs>
+            <linearGradient id="metallic-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="45%" stopColor="#d4d4d4" />
+              <stop offset="100%" stopColor="#737373" />
+            </linearGradient>
+          </defs>
+        </svg>
         {/* Background image */}
         <div
           className="pointer-events-none absolute inset-0"
@@ -252,7 +262,7 @@ export default function OnboardingPage() {
                   <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shadow-sm">
                     <Shield className="w-5 h-5 text-black" />
                   </div>
-                  <div className="text-white/90 text-sm">Tsunami Onboarding</div>
+                  <div className="text-sm font-light tracking-tight bg-gradient-to-b from-white via-zinc-300 to-zinc-500 bg-clip-text text-transparent">Tsunami Onboarding</div>
                 </div>
                 <div className="text-xs text-white/70">Step {step + 1} / 7</div>
               </div>
@@ -269,9 +279,9 @@ export default function OnboardingPage() {
                   <Card>
                     <div className="flex flex-col items-center text-center gap-4 py-8">
                       <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shadow">
-                        <Shield className="w-7 h-7 text-black" />
+                        <Shield className="w-7 h-7 [stroke:url(#metallic-gradient)]" />
                       </div>
-                      <div className="text-3xl font-extrabold tracking-tight text-white">Tsunami</div>
+                      <div className="text-3xl font-extralight tracking-tight bg-gradient-to-b from-white via-zinc-300 to-zinc-500 bg-clip-text text-transparent">Tsunami</div>
                       <div className="text-white/85 text-base">“Private. Compliant. DeFi-native.”</div>
                       <div className="text-white/60 text-sm max-w-xl">
                         Your tokens, your privacy. Built on Uniswap v4 + zkSNARKs.

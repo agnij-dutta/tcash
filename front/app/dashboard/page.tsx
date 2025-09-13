@@ -82,6 +82,16 @@ export default function TsunamiDashboard() {
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden flex flex-col font-sans">
+      {/* Local metallic gradient defs */}
+      <svg aria-hidden="true" width="0" height="0" className="absolute">
+        <defs>
+          <linearGradient id="metallic-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="45%" stopColor="#d4d4d4" />
+            <stop offset="100%" stopColor="#737373" />
+          </linearGradient>
+        </defs>
+      </svg>
       {/* Background image */}
       <div
         className="pointer-events-none absolute inset-0"
@@ -150,7 +160,7 @@ export default function TsunamiDashboard() {
         {/* Balances Section */}
         <section className="backdrop-blur-xl border border-white/15 rounded-2xl p-6 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_16px_56px_rgba(0,0,0,0.45)]" style={{ background: "transparent" }}>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white">Private Balances</h2>
+            <h2 className="text-lg font-semibold bg-gradient-to-b from-white via-zinc-300 to-zinc-500 bg-clip-text text-transparent tracking-tight">Private Balances</h2>
             <button
               onClick={() => setShowBalances((s) => !s)}
               className="text-xs px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/15 text-white/90 border border-white/15"
@@ -158,7 +168,7 @@ export default function TsunamiDashboard() {
               {showBalances ? "Hide" : "Show"}
             </button>
           </div>
-          <div className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+          <div className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-b from-white via-zinc-300 to-zinc-500 bg-clip-text text-transparent tracking-tight">
             {showBalances ? `$${totalUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "••••"}
           </div>
           <div className="mt-4 divide-y divide-white/10">
@@ -195,11 +205,11 @@ export default function TsunamiDashboard() {
         </section>
 
         {/* Content Grid: Activity | Compliance & Limits | Analytics */}
-        <div className="grid lg:grid-cols-5 gap-6">
+        <div className="grid lg:grid-cols-2 gap-6">
           {/* Recent Activity Feed */}
-          <section className="lg:col-span-3 backdrop-blur-xl border border-white/15 rounded-2xl p-6 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_16px_56px_rgba(0,0,0,0.45)]" style={{ background: "transparent" }}>
+          <section className="backdrop-blur-xl border border-white/15 rounded-2xl p-6 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_16px_56px_rgba(0,0,0,0.45)]" style={{ background: "transparent" }}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold text-white">Recent Activity</h3>
+              <h3 className="text-base font-semibold bg-gradient-to-b from-white via-zinc-300 to-zinc-500 bg-clip-text text-transparent tracking-tight">Recent Activity</h3>
               <Activity className="w-4 h-4 text-white/60" />
             </div>
             <div className="space-y-4">
@@ -231,11 +241,11 @@ export default function TsunamiDashboard() {
           </section>
 
           {/* Right Column: Compliance & Analytics */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-6">
             {/* Compliance & Limits */}
             <section className="backdrop-blur-xl border border-white/15 rounded-2xl p-6 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_16px_56px_rgba(0,0,0,0.45)]" style={{ background: "transparent" }}>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-base font-semibold text-white">Compliance & Limits</h3>
+                <h3 className="text-base font-semibold bg-gradient-to-b from-white via-zinc-300 to-zinc-500 bg-clip-text text-transparent tracking-tight">Compliance & Limits</h3>
                 {hasZkAttestation ? (
                   <span className="inline-flex items-center gap-1.5 text-emerald-300 text-xs px-2.5 py-1.5 rounded-md bg-emerald-500/15 border border-emerald-500/40">
                     <CheckCircle2 className="w-3.5 h-3.5" /> Ready
@@ -272,7 +282,7 @@ export default function TsunamiDashboard() {
             {/* Analytics (Optional) */}
             <section className="backdrop-blur-xl border border-white/15 rounded-2xl p-6 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_16px_56px_rgba(0,0,0,0.45)]" style={{ background: "rgba(255,255,255,0.02)" }}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-semibold text-white">Analytics</h3>
+                <h3 className="text-base font-semibold bg-gradient-to-b from-white via-zinc-300 to-zinc-500 bg-clip-text text-transparent tracking-tight">Analytics</h3>
                 <PieChart className="w-4 h-4 text-white/60" />
               </div>
               <div className="grid grid-cols-2 gap-4 items-center">

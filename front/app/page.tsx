@@ -54,6 +54,16 @@ export default function Landing({ onNavigate }: LandingProps) {
 
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden" style={{ scrollBehavior: "smooth" }}>
+      {/* Metallic gradient defs (reusable across icons) */}
+      <svg aria-hidden="true" width="0" height="0" className="absolute">
+        <defs>
+          <linearGradient id="metallic-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="45%" stopColor="#d4d4d4" />
+            <stop offset="100%" stopColor="#737373" />
+          </linearGradient>
+        </defs>
+      </svg>
       {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-center">
         <div className="absolute inset-0 z-0">
@@ -138,8 +148,10 @@ export default function Landing({ onNavigate }: LandingProps) {
 
         <div className="relative z-10 max-w-7xl mx-auto">
           <div className="text-center mb-20">
-            <h2 className="text-6xl md:text-7xl font-bold mb-8 text-purple-400 tracking-tight">Features</h2>
-            <p className="text-xl text-purple-200 max-w-3xl mx-auto leading-relaxed">
+            <h2 className="text-6xl md:text-7xl font-extralight mb-8 tracking-tight bg-gradient-to-b from-white via-zinc-300 to-zinc-500 bg-clip-text text-transparent">
+              Features
+            </h2>
+            <p className="text-xl max-w-3xl mx-auto leading-relaxed font-light tracking-tight bg-gradient-to-b from-white via-zinc-300/80 to-zinc-500/60 bg-clip-text text-transparent">
               Revolutionary DeFi infrastructure built for privacy, compliance, and seamless user experience
             </p>
           </div>
@@ -205,14 +217,12 @@ export default function Landing({ onNavigate }: LandingProps) {
               >
                 <div className="relative">
                   <feature.icon
-                    className={`w-12 h-12 mb-6 transition-all duration-300 group-hover:scale-110 ${
-                      feature.color === "purple" ? "text-purple-400" : "text-pink-400"
-                    }`}
+                    className={`w-12 h-12 mb-6 transition-all duration-300 group-hover:scale-110 [stroke:url(#metallic-gradient)]`}
                   />
-                  <h3 className="text-xl font-semibold mb-4 text-white group-hover:text-purple-200 transition-colors">
+                  <h3 className="text-xl font-light tracking-tight mb-4 bg-gradient-to-b from-white via-zinc-300 to-zinc-500 bg-clip-text text-transparent">
                     {feature.title}
                   </h3>
-                  <p className="text-purple-200 leading-relaxed group-hover:text-white transition-colors">
+                  <p className="leading-relaxed font-light tracking-tight bg-gradient-to-b from-white via-zinc-300/80 to-zinc-500/60 bg-clip-text text-transparent">
                     {feature.description}
                   </p>
                 </div>
@@ -248,15 +258,15 @@ export default function Landing({ onNavigate }: LandingProps) {
                 style={{ background: "rgba(139,92,246,0.05)" }}
               >
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="text-5xl font-bold text-purple-400 group-hover:text-pink-400 transition-colors">
+                  <div className="text-5xl font-extralight tracking-tight bg-gradient-to-b from-white via-zinc-300 to-zinc-500 bg-clip-text text-transparent">
                     {flow.step}
                   </div>
-                  <flow.icon className="w-8 h-8 text-purple-400 group-hover:text-pink-400 transition-all duration-300 group-hover:scale-110" />
+                  <flow.icon className="w-8 h-8 transition-all duration-300 group-hover:scale-110 [stroke:url(#metallic-gradient)]" />
                 </div>
-                <h3 className="text-2xl font-semibold mb-4 text-white group-hover:text-purple-200 transition-colors">
+                <h3 className="text-2xl font-light tracking-tight mb-4 bg-gradient-to-b from-white via-zinc-300 to-zinc-500 bg-clip-text text-transparent">
                   {flow.title}
                 </h3>
-                <p className="text-purple-200 leading-relaxed group-hover:text-white transition-colors">
+                <p className="leading-relaxed font-light tracking-tight bg-gradient-to-b from-white via-zinc-300/80 to-zinc-500/60 bg-clip-text text-transparent">
                   {flow.description}
                 </p>
               </Card>
@@ -271,7 +281,9 @@ export default function Landing({ onNavigate }: LandingProps) {
 
         <div className="relative z-10 max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-5xl md:text-6xl font-bold mb-6 text-pink-400 tracking-tight">Trusted by Thousands</h2>
+            <h2 className="text-5xl md:text-6xl font-extralight mb-6 tracking-tight bg-gradient-to-b from-white via-zinc-300 to-zinc-500 bg-clip-text text-transparent">
+              Trusted by Thousands
+            </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -286,11 +298,11 @@ export default function Landing({ onNavigate }: LandingProps) {
                 className="backdrop-blur-xl bg-white/5 border-white/15 p-8 text-center hover:bg-white/10 transition-all duration-500 hover:scale-105 group shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_16px_56px_rgba(0,0,0,0.35)]"
                 style={{ background: "rgba(255,255,255,0.02)" }}
               >
-                <stat.icon className="w-10 h-10 text-pink-400 mb-4 mx-auto group-hover:scale-110 transition-transform" />
-                <div className="text-4xl font-bold text-white mb-2 group-hover:text-pink-200 transition-colors">
+                <stat.icon className="w-10 h-10 mb-4 mx-auto group-hover:scale-110 transition-transform [stroke:url(#metallic-gradient)]" />
+                <div className="text-4xl font-extralight tracking-tight mb-2 bg-gradient-to-b from-white via-zinc-300 to-zinc-500 bg-clip-text text-transparent">
                   {stat.number}
                 </div>
-                <div className="text-pink-200 font-medium group-hover:text-white transition-colors">{stat.label}</div>
+                <div className="font-light tracking-tight bg-gradient-to-b from-white via-zinc-300/80 to-zinc-500/60 bg-clip-text text-transparent">{stat.label}</div>
               </Card>
             ))}
           </div>

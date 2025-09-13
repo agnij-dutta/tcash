@@ -165,6 +165,16 @@ export default function WithdrawPage() {
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden flex flex-col items-center">
+      {/* Local metallic gradient defs */}
+      <svg aria-hidden="true" width="0" height="0" className="absolute">
+        <defs>
+          <linearGradient id="metallic-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="45%" stopColor="#d4d4d4" />
+            <stop offset="100%" stopColor="#737373" />
+          </linearGradient>
+        </defs>
+      </svg>
       {/* Background image */}
       <div
         className="pointer-events-none absolute inset-0"
@@ -196,10 +206,10 @@ export default function WithdrawPage() {
             {/* Header */}
             <div className="flex items-start justify-between mb-2">
               <div>
-                <div className="text-white text-xl font-bold tracking-wide flex items-center gap-2">
-                  <button className="text-white text-xl font-bold tracking-wide">Withdraw</button>
+                <div className="text-xl font-light tracking-tight flex items-center gap-2">
+                  <button className="text-xl font-light tracking-tight bg-gradient-to-b from-white via-zinc-300 to-zinc-500 bg-clip-text text-transparent">Withdraw</button>
                   <span className="inline-flex items-center gap-1 text-white text-xs px-2.5 py-1.5 rounded-md bg-white/10 border border-white/15">
-                    <Shield className="w-3.5 h-3.5" /> private → public
+                    <Shield className="w-3.5 h-3.5 [stroke:url(#metallic-gradient)]" /> private → public
                   </span>
                 </div>
                 <div className="text-white text-base font-medium mt-2">
