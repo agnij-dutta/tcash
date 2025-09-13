@@ -4,6 +4,8 @@ import type React from "react"
 
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useAccount } from "wagmi"
+import { useEERC } from "@/hooks/useEERC"
 import {
   Shield,
   Wallet,
@@ -15,6 +17,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   RefreshCw,
+  Loader2,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -65,6 +68,8 @@ function generateSeed(words = 12) {
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const { address, isConnected } = useAccount()
+  const { isInitialized, isRegistered, register, generateDecryptionKey } = useEERC()
   const [step, setStep] = useState(0)
   const [mode, setMode] = useState<Mode>("create")
 
@@ -90,6 +95,12 @@ export default function OnboardingPage() {
   const [finishing, setFinishing] = useState(false)
   const [confetti, setConfetti] = useState(false)
 
+  // eERC Registration state
+  const [isRegistering, setIsRegistering] = useState(false)
+  const [registrationError, setRegistrationError] = useState<string | null>(null)
+  const [registrationStep, setRegistrationStep] = useState<'generate' | 'register' | 'complete'>('generate')
+  const [retryCount, setRetryCount] = useState(0)
+
   // Init defaults
   useEffect(() => {
     if (seed.length === 0) setSeed(generateSeed(12))
@@ -97,8 +108,86 @@ export default function OnboardingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // eERC Registration functions
+  const handleGenerateDecryptionKey = async () => {
+    if (!isConnected) {
+      setRegistrationError("Please connect your wallet first")
+      return
+    }
+
+    if (!isInitialized) {
+      setRegistrationError("eERC SDK is not initialized. Please wait a moment and try again.")
+      return
+    }
+
+    try {
+      setIsRegistering(true)
+      setRegistrationError(null)
+      setRegistrationStep('generate')
+      
+      console.log("Attempting to generate decryption key...")
+      console.log("eERC state:", { isInitialized, isConnected, address })
+      
+      // Generate decryption key
+      const key = await generateDecryptionKey()
+      console.log("Decryption key generated successfully")
+      setRegistrationStep('register')
+      
+    } catch (error) {
+      console.error("Key generation failed:", error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      setRegistrationError(`Key generation failed: ${errorMessage}`)
+      
+      // Auto-retry once if it's an initialization error
+      if (errorMessage.includes('not initialized') && retryCount < 1) {
+        console.log("Retrying key generation...")
+        setRetryCount(prev => prev + 1)
+        setTimeout(() => {
+          handleGenerateDecryptionKey()
+        }, 2000)
+      }
+    } finally {
+      setIsRegistering(false)
+    }
+  }
+
+  const handleRegister = async () => {
+    if (!isConnected) {
+      setRegistrationError("Please connect your wallet first")
+      return
+    }
+
+    if (!isInitialized) {
+      setRegistrationError("eERC SDK is not initialized. Please wait a moment and try again.")
+      return
+    }
+
+    try {
+      setIsRegistering(true)
+      setRegistrationError(null)
+      setRegistrationStep('register')
+      
+      // Register with eERC protocol
+      const result = await register()
+      console.log("Registration successful:", result)
+      
+      setRegistrationStep('complete')
+      
+      // Move to next step after successful registration
+      setTimeout(() => {
+        setStep(step + 1)
+      }, 1500)
+      
+    } catch (error) {
+      console.error("Registration failed:", error)
+      setRegistrationError(`Registration failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setIsRegistering(false)
+    }
+  }
+
   function next() {
-    setStep((s) => Math.min(6, s + 1))
+    setStep((s) => Math.min(7, s + 1))
   }
   function prev() {
     setStep((s) => Math.max(0, s - 1))
@@ -405,8 +494,127 @@ export default function OnboardingPage() {
                   </Card>
                 )}
 
-                {/* 4. Stealth Address */}
+                {/* 3. eERC Registration */}
                 {step === 3 && (
+                  <Card>
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-white/90 text-[#0a0b0e] flex items-center justify-center">
+                        <Shield className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-white font-semibold">eERC Protocol Registration</div>
+                        <div className="text-white/70 text-sm mt-1">
+                          Register with the eERC protocol to enable private token operations. This creates your cryptographic identity on the blockchain.
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 space-y-4">
+                      {!isConnected ? (
+                        <div className="text-center py-8">
+                          <Wallet className="w-12 h-12 text-white/40 mx-auto mb-4" />
+                          <div className="text-white/60 text-sm">Please connect your wallet to continue</div>
+                        </div>
+                      ) : !isInitialized ? (
+                        <div className="text-center py-8">
+                          <Loader2 className="w-12 h-12 text-white/40 mx-auto mb-4 animate-spin" />
+                          <div className="text-white/60 text-sm">Initializing eERC SDK...</div>
+                          <div className="text-white/40 text-xs mt-2">Please wait while we set up the protocol</div>
+                        </div>
+                      ) : registrationStep === 'generate' ? (
+                        <div className="space-y-4">
+                          <div className="text-white/80 text-sm">
+                            Step 1: Generate your decryption key for private operations
+                          </div>
+                          <Button
+                            onClick={handleGenerateDecryptionKey}
+                            disabled={isRegistering || !isInitialized}
+                            className="w-full rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold hover:brightness-110 disabled:opacity-60"
+                          >
+                            {isRegistering ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                Generating Key...
+                              </>
+                            ) : (
+                              <>
+                                <KeyRound className="w-4 h-4 mr-2" />
+                                Generate Decryption Key
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      ) : registrationStep === 'register' ? (
+                        <div className="space-y-4">
+                          <div className="text-white/80 text-sm">
+                            Step 2: Register with the eERC protocol using zero-knowledge proofs
+                          </div>
+                          <div className="text-xs text-white/60 bg-white/10 p-3 rounded-lg">
+                            This will create your public key and registration hash on the BabyJubJub curve, 
+                            enabling private mints, transfers, and withdrawals.
+                          </div>
+                          <Button
+                            onClick={handleRegister}
+                            disabled={isRegistering || !isInitialized}
+                            className="w-full rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold hover:brightness-110 disabled:opacity-60"
+                          >
+                            {isRegistering ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                Registering...
+                              </>
+                            ) : (
+                              <>
+                                <Shield className="w-4 h-4 mr-2" />
+                                Register with eERC
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      ) : registrationStep === 'complete' ? (
+                        <div className="text-center py-4">
+                          <CheckCircle2 className="w-12 h-12 text-emerald-300 mx-auto mb-4" />
+                          <div className="text-white font-semibold mb-2">Registration Complete!</div>
+                          <div className="text-white/70 text-sm">
+                            Your cryptographic identity is now registered with the eERC protocol.
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {registrationError && (
+                        <div className="text-xs text-rose-200 bg-rose-500/15 border border-rose-500/40 px-3 py-2 rounded-lg">
+                          <div className="flex items-center gap-2 mb-2">
+                            <AlertTriangle className="w-4 h-4" /> {registrationError}
+                          </div>
+                          {registrationError.includes('not initialized') && (
+                            <button
+                              onClick={() => {
+                                setRegistrationError(null)
+                                setRetryCount(0)
+                                handleGenerateDecryptionKey()
+                              }}
+                              className="text-xs text-rose-200 hover:text-rose-100 underline"
+                            >
+                              Retry
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {registrationStep === 'complete' && (
+                        <Button
+                          onClick={next}
+                          className="w-full rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-white/15"
+                        >
+                          Continue
+                        </Button>
+                      )}
+                    </div>
+                  </Card>
+                )}
+
+                {/* 4. Stealth Address */}
+                {step === 4 && (
                   <Card>
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 rounded-lg bg-white/90 text-[#0a0b0e] flex items-center justify-center">
@@ -467,7 +675,7 @@ export default function OnboardingPage() {
                 )}
 
                 {/* 5. Compliance Preference */}
-                {step === 4 && (
+                {step === 5 && (
                   <Card>
                     <div className="flex items-start justify-between">
                       <div>
@@ -524,7 +732,7 @@ export default function OnboardingPage() {
                 )}
 
                 {/* 6. Feature Highlights */}
-                {step === 5 && (
+                {step === 6 && (
                   <Card>
                     <div className="text-white/90 text-base font-semibold mb-3">Feature Highlights</div>
                     <div className="grid sm:grid-cols-3 gap-3">
@@ -547,7 +755,7 @@ export default function OnboardingPage() {
                 )}
 
                 {/* 7. Finish */}
-                {step === 6 && (
+                {step === 7 && (
                   <Card>
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 rounded-full bg-[#e6ff55] text-[#0a0b0e] flex items-center justify-center">
@@ -594,7 +802,7 @@ export default function OnboardingPage() {
                   <div className="text-white/60 text-xs">You can revisit settings later in the app</div>
                   <Button
                     onClick={next}
-                    disabled={step === 6}
+                    disabled={step === 7}
                     className="rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-white/15 inline-flex items-center gap-2 disabled:opacity-50"
                   >
                     Next <ChevronRight className="w-4 h-4" />

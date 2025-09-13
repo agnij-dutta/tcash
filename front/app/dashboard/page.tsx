@@ -20,7 +20,6 @@ import { useAccount } from "wagmi"
 import { useEERC } from "@/hooks/useEERC"
 import { useEncryptedBalance } from "@/hooks/useEncryptedBalance"
 import { WalletConnect } from "@/components/wallet-connect"
-import { RegistrationStatus } from "@/components/registration-status"
 
 type TokenRow = {
   symbol: string
@@ -126,10 +125,17 @@ export default function TsunamiDashboard() {
   if (!isRegistered && isInitialized) {
     return (
       <div className="relative min-h-screen w-full overflow-hidden flex flex-col font-sans items-center justify-center">
-        <RegistrationStatus onRegistrationComplete={() => {
-          // Refresh the page or trigger a re-render
-          window.location.reload()
-        }} />
+        <div className="text-center max-w-md">
+          <Shield className="w-16 h-16 text-white/60 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-white mb-2">Register for eERC</h2>
+          <p className="text-white/60 mb-6">You need to register with the eERC protocol to start using private tokens</p>
+          <button
+            onClick={register}
+            className="px-6 py-3 rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold hover:brightness-110 transition-all"
+          >
+            Register Now
+          </button>
+        </div>
       </div>
     )
   }

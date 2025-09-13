@@ -19,6 +19,17 @@ export function useEERC() {
     decryptionKey
   )
 
+  // Debug logging
+  useEffect(() => {
+    console.log("eERC Hook State:", {
+      hasPublicClient: !!publicClient,
+      hasWalletClient: !!walletClient,
+      hasDecryptionKey: !!decryptionKey,
+      isInitialized: eERC.isInitialized,
+      contractAddress: CONTRACT_ADDRESSES.eERC
+    })
+  }, [publicClient, walletClient, decryptionKey, eERC.isInitialized])
+
   // Load decryption key from localStorage on mount
   useEffect(() => {
     const storedKey = localStorage.getItem('eerc-decryption-key')
@@ -30,14 +41,6 @@ export function useEERC() {
   // Save decryption key to localStorage when it changes
   const handleRegister = async () => {
     try {
-      // First generate decryption key if not already set
-      if (!decryptionKey) {
-        const key = await eERC.generateDecryptionKey()
-        setDecryptionKey(key)
-        localStorage.setItem('eerc-decryption-key', key)
-      }
-      
-      // Then register with the eERC protocol
       const result = await eERC.register()
       if (result.key) {
         setDecryptionKey(result.key)
