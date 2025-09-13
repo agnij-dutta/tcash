@@ -1,0 +1,57 @@
+{
+  "43114": {
+    "name": "Avalanche C-Chain",
+    "converterAddress": "0x0000000000000000000000000000000000000000",
+    "circuitUrls": {
+      "registration": "https://circuits.avacloud.io/registration",
+      "transfer": "https://circuits.avacloud.io/transfer",
+      "mint": "https://circuits.avacloud.io/mint",
+      "deposit": "https://circuits.avacloud.io/deposit",
+      "withdraw": "https://circuits.avacloud.io/withdraw",
+      "burn": "https://circuits.avacloud.io/burn"
+    },
+    "auditorPublicKey": {
+      "x": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "y": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "rpcUrl": "https://api.avax.network/ext/bc/C/rpc",
+    "explorerUrl": "https://snowtrace.io"
+  },
+  "43113": {
+    "name": "Avalanche Fuji Testnet",
+    "converterAddress": "0x372dAB27c8d223Af11C858ea00037Dc03053B22E",
+    "converterOwner": "0xb73c17CC80527e300D122263D67144112F92e804",
+    "circuitUrls": {
+      "registration": "https://circuits-testnet.avacloud.io/registration",
+      "transfer": "https://circuits-testnet.avacloud.io/transfer",
+      "mint": "https://circuits-testnet.avacloud.io/mint",
+      "deposit": "https://circuits-testnet.avacloud.io/deposit",
+      "withdraw": "https://circuits-testnet.avacloud.io/withdraw",
+      "burn": "https://circuits-testnet.avacloud.io/burn"
+    },
+    "auditorPublicKey": {
+      "x": "0xa8b2d1acbd7dbd138d3114972d3c5b34c104a6b073aace27f328890d8c8195d1",
+      "y": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "rpcUrl": "https://api.avax-test.network/ext/bc/C/rpc",
+    "explorerUrl": "https://testnet.snowtrace.io"
+  },
+  "1": {
+    "name": "Ethereum Mainnet",
+    "converterAddress": "0x0000000000000000000000000000000000000000",
+    "circuitUrls": {
+      "registration": "https://circuits.avacloud.io/ethereum/registration",
+      "transfer": "https://circuits.avacloud.io/ethereum/transfer",
+      "mint": "https://circuits.avacloud.io/ethereum/mint",
+      "deposit": "https://circuits.avacloud.io/ethereum/deposit",
+      "withdraw": "https://circuits.avacloud.io/ethereum/withdraw",
+      "burn": "https://circuits.avacloud.io/ethereum/burn"
+    },
+    "auditorPublicKey": {
+      "x": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "y": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "rpcUrl": "https://eth.llamarpc.com",
+    "explorerUrl": "https://etherscan.io"
+  }
+}

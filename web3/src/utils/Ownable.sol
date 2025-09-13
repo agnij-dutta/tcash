@@ -14,7 +14,7 @@ contract Ownable {
     error NotOwner();
     error ZeroAddress();
     
-    modifier onlyOwner() {
+    modifier onlyOwner() virtual {
         if (msg.sender != owner) revert NotOwner();
         _;
     }
@@ -28,7 +28,7 @@ contract Ownable {
      * @dev Transfers ownership of the contract to a new account
      * @param newOwner The address to transfer ownership to
      */
-    function transferOwnership(address newOwner) external onlyOwner {
+    function transferOwnership(address newOwner) external virtual onlyOwner {
         if (newOwner == address(0)) revert ZeroAddress();
         emit OwnershipTransferred(owner, newOwner);
         owner = newOwner;
