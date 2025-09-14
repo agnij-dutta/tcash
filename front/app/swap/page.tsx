@@ -12,17 +12,26 @@ import {
   CheckCircle2,
   AlertTriangle,
 } from "lucide-react"
+import { useHardcodedWallet } from "@/hooks/useHardcodedWallet"
+import { useEERC } from "@/hooks/useEERC"
 
 export default function TsunamiSwap() {
-  // Simple demo token list
+  const { address, isConnected } = useHardcodedWallet()
+  const { isRegistered, decryptedBalance, erc20Symbol, erc20Decimals, transfer } = useEERC()
+
+  // Real token list based on actual balances
   const tokenList = useMemo(
     () => [
-      { symbol: "eUSDC", name: "Encrypted USD Coin", balance: 23489.89 },
-      { symbol: "eDAI", name: "Encrypted DAI", balance: 12045.12 },
-      { symbol: "BNB", name: "BNB", balance: 5695.89 },
-      { symbol: "USDT", name: "Tether", balance: 7575.93 },
+      { 
+        symbol: `e${erc20Symbol || 'USDC'}`, 
+        name: `Encrypted ${erc20Symbol || 'USD Coin'}`, 
+        balance: parseFloat((Number(decryptedBalance) / Math.pow(10, erc20Decimals || 18)).toFixed(6))
+      },
+      { symbol: "eDAI", name: "Encrypted DAI", balance: 0 },
+      { symbol: "eAVAX", name: "Encrypted AVAX", balance: 0 },
+      { symbol: "eUSDT", name: "Encrypted Tether", balance: 0 },
     ],
-    [],
+    [decryptedBalance, erc20Symbol, erc20Decimals],
   )
 
   // Selection + amounts
@@ -107,20 +116,34 @@ export default function TsunamiSwap() {
       setErrorMessage("Insufficient balance")
       return
     }
+    if (!isConnected || !isRegistered) {
+      setErrorMessage("Please connect wallet and register with eERC first")
+      return
+    }
 
     try {
       setIsSwapping(true)
       addToast("Generating zk proof...")
+      
+      // In a real swap implementation, this would be the recipient address of a DEX contract
+      // For now, we'll simulate a private transfer to demonstrate the functionality
+      const dexRecipient = "0x742d35Cc6634C0532925a3b8D1C9dFd0F4F4b8Cb" // Mock DEX contract
+      const amountWei = (amt * Math.pow(10, erc20Decimals || 18)).toString()
+      
       await new Promise((r) => setTimeout(r, 1000))
       addToast("Proof generated successfully")
-      await new Promise((r) => setTimeout(r, 800))
-      addToast("Transaction submitted to PrivacyRouter")
-      await new Promise((r) => setTimeout(r, 700))
+      
+      // Execute private transfer to DEX
+      await transfer(dexRecipient, amountWei)
+      
+      addToast("Private swap executed on PrivacyRouter")
+      await new Promise((r) => setTimeout(r, 500))
+      
       setIsSwapping(false)
       setSuccessOpen(true)
     } catch (e) {
       setIsSwapping(false)
-      setErrorMessage("Swap failed: Insufficient liquidity")
+      setErrorMessage(`Swap failed: ${e instanceof Error ? e.message : 'Unknown error'}`)
     }
   }
 

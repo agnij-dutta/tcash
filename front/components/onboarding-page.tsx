@@ -5,7 +5,7 @@ import type React from "react"
 import { useEffect, useMemo, useState } from "react"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
 import { useRouter } from "next/navigation"
-import { useDirectEERC } from "@/hooks/useDirectEERC"
+import { useEERC } from "@/hooks/useEERC"
 import { useHardcodedWallet } from "@/hooks/useHardcodedWallet"
 import {
   Shield,
@@ -70,7 +70,7 @@ function generateSeed(words = 12) {
 export default function OnboardingPage() {
   const router = useRouter()
   const { address, isConnected } = useHardcodedWallet()
-  const { isInitialized, isRegistered, deposit, withdraw } = useDirectEERC()
+  const { isInitialized, isRegistered, register, deposit, withdraw } = useEERC()
   const [step, setStep] = useState(0)
   const [mode, setMode] = useState<Mode>("create")
 
