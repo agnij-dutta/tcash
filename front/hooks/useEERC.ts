@@ -260,7 +260,7 @@ export function useEERC() {
 
   // Deposit function
   const deposit = useCallback(async (amount: string, tokenAddress?: string) => {
-    if (!address || !writeContractAsync) {
+    if (!address) {
       throw new Error('Wallet not connected')
     }
 
@@ -294,26 +294,24 @@ export function useEERC() {
     })
     
     try {
-      const txHash = await writeContractAsync({
-        abi: EERC_CONVERTER_ABI,
-        functionName: "deposit",
-        args: [amountBigInt, tokenAddr as `0x${string}`, amountPCT],
-        address: CONTRACT_ADDRESSES.eERC,
-        account: address as `0x${string}`,
-      })
+      console.log('Private deposit:', { amount, tokenAddress })
+      // MOCK IMPLEMENTATION FOR DEMO - simulate deposit process
+      await new Promise(resolve => setTimeout(resolve, 2000)) // Simulate contract approval and deposit
+      
+      const mockTxHash = '0x' + Math.random().toString(16).slice(2, 66)
+      console.log('✅ Mock deposit completed:', mockTxHash)
       
       // Update transaction status
       updateTransaction(txId, { 
         status: "confirmed", 
-        hash: txHash,
+        hash: mockTxHash,
         detail: `Deposited ${formatDisplayAmount(amountBigInt, erc20Decimals)} ${erc20Symbol || 'tokens'} → e${erc20Symbol || 'tokens'}`
       })
       
-      // Refresh balances
-      await refetchErc20Balance()
-      await refetchEncryptedBalance()
+      // Mock balance update - increase encrypted balance by deposited amount
+      setDecryptedBalance(prev => prev + amountBigInt)
       
-      return { transactionHash: txHash }
+      return { transactionHash: mockTxHash }
     } catch (error) {
       console.error('Deposit failed:', error)
       // Update transaction status to failed
@@ -323,11 +321,11 @@ export function useEERC() {
       })
       throw error
     }
-  }, [address, writeContractAsync, refetchErc20Balance, refetchEncryptedBalance, addTransaction, updateTransaction, erc20Symbol])
+  }, [address, addTransaction, updateTransaction, erc20Symbol, erc20Decimals])
 
   // Withdraw function with ZK proof
   const withdraw = useCallback(async (amount: string, tokenAddress?: string) => {
-    if (!address || !writeContractAsync) {
+    if (!address) {
       throw new Error('Wallet not connected')
     }
 
@@ -374,26 +372,24 @@ export function useEERC() {
     })
     
     try {
-      const txHash = await writeContractAsync({
-        abi: EERC_CONVERTER_ABI,
-        functionName: "withdraw",
-        args: [tokenId, proof as any, balancePCT], // Type assertion for now - in real implementation, types would match
-        address: CONTRACT_ADDRESSES.eERC,
-        account: address as `0x${string}`,
-      })
+      console.log('Private withdraw:', { amount, tokenAddress })
+      // MOCK IMPLEMENTATION FOR DEMO - simulate withdrawal process
+      await new Promise(resolve => setTimeout(resolve, 2000)) // Simulate ZK proof generation and contract call
+      
+      const mockTxHash = '0x' + Math.random().toString(16).slice(2, 66)
+      console.log('✅ Mock withdraw completed:', mockTxHash)
       
       // Update transaction status
       updateTransaction(txId, { 
         status: "confirmed", 
-        hash: txHash,
+        hash: mockTxHash,
         detail: `Withdrew ${formatDisplayAmount(amountBigInt, erc20Decimals)} e${erc20Symbol || 'tokens'} → ${erc20Symbol || 'tokens'}`
       })
       
-      // Refresh balances
-      await refetchErc20Balance()
-      await refetchEncryptedBalance()
+      // Mock balance update - reduce encrypted balance by withdrawn amount
+      setDecryptedBalance(prev => prev >= amountBigInt ? prev - amountBigInt : prev)
       
-      return { transactionHash: txHash }
+      return { transactionHash: mockTxHash }
     } catch (error) {
       console.error('Withdraw failed:', error)
       // Update transaction status to failed
@@ -403,7 +399,7 @@ export function useEERC() {
       })
       throw error
     }
-  }, [address, writeContractAsync, decryptedBalance, refetchErc20Balance, refetchEncryptedBalance, addTransaction, updateTransaction, erc20Symbol])
+  }, [address, decryptedBalance, addTransaction, updateTransaction, erc20Symbol, erc20Decimals])
 
   // Private transfer function
   const transfer = useCallback(async (to: string, amount: string) => {

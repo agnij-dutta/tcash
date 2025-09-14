@@ -75,6 +75,10 @@ export function usePrivateSwap() {
     // Simulate computationally intensive proof generation
     await new Promise(resolve => setTimeout(resolve, 1500))
     
+    // Convert amount string to BigInt (handle decimal amounts)
+    const amountFloat = parseFloat(amount)
+    const amountBigInt = BigInt(Math.floor(amountFloat * Math.pow(10, 18))) // Convert to Wei
+    
     // Mock proof generation (real implementation would use snarkjs)
     const mockProof: SwapProof = {
       ownershipProof: {
@@ -87,10 +91,10 @@ export function usePrivateSwap() {
       },
       publicSignals: {
         nullifierHash: BigInt(Math.floor(Math.random() * 10000000)),
-        swapCommitment: BigInt(amount) * BigInt(1000), // Commitment to amount
+        swapCommitment: amountBigInt, // Commitment to amount in Wei
         fromTokenId: BigInt(fromToken === 'eAVAXTEST' ? 1 : fromToken === 'eAVAX' ? 2 : 3),
         toTokenId: BigInt(toToken === 'eAVAXTEST' ? 1 : toToken === 'eAVAX' ? 2 : 3),
-        routerAddress: BigInt('0x742d35Cc6634C0532925a3b8D1C9dFd0F4F4b8Cb') // Mock privacy router
+        routerAddress: BigInt(Math.floor(Math.random() * 1000000)) // Mock router address
       }
     }
     
