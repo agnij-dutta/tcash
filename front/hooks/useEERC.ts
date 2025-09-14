@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from "react"
 import { useHardcodedWallet } from "./useHardcodedWallet"
 import { useWriteContract, useReadContract } from "wagmi"
 import { ERC20_ABI, EERC_CONVERTER_ABI, formatDisplayAmount } from "@/lib/constants"
+import { useTransactionHistory } from "./useTransactionHistory"
 
 // Types for eERC
 interface RegistrationProof {
@@ -34,6 +35,7 @@ interface RegistrationResult {
 export function useEERC() {
   const { address, isConnected, publicClient, walletClient } = useHardcodedWallet()
   const { writeContractAsync } = useWriteContract()
+  const { addTransaction, updateTransaction } = useTransactionHistory()
   const [decryptionKey, setDecryptionKey] = useState<string | undefined>()
   const [publicKey, setPublicKey] = useState<[bigint, bigint]>([BigInt(0), BigInt(0)])
   const [isInitialized, setIsInitialized] = useState(false)
@@ -80,6 +82,16 @@ export function useEERC() {
     
     if (storedKey) {
       setDecryptionKey(storedKey)
+      console.log('eERC Debug - Loaded stored decryption key')
+    } else {
+      // Auto-generate keys for easier testing
+      console.log('eERC Debug - No stored key, auto-generating...')
+      const { privateKey, publicKey: newPublicKey } = generateKeyPair()
+      setDecryptionKey(privateKey)
+      setPublicKey(newPublicKey)
+      localStorage.setItem('eerc-decryption-key', privateKey)
+      localStorage.setItem('eerc-public-key', `${newPublicKey[0]},${newPublicKey[1]}`)
+      console.log('eERC Debug - Auto-generated keys')
     }
     
     if (storedPublicKey) {
@@ -104,13 +116,38 @@ export function useEERC() {
         setEncryptedBalance(balance)
         
         // Simulate balance decryption (in real implementation, this would use the decryption key)
-        // For now, we'll use a mock decrypted value
+        // For now, let's use the ERC20 balance as a reference for the encrypted balance
+        console.log('eERC Debug - Processing balance data:', { 
+          encryptedBalanceData, 
+          erc20Balance: erc20Balance?.toString(),
+          erc20Symbol,
+          hasDecryptionKey: !!decryptionKey 
+        })
+        
         if (decryptionKey) {
-          setDecryptedBalance(BigInt(Math.floor(Math.random() * 1000)) * BigInt(10**18)) // Mock balance
+          // HARDCODED VALUES FOR TESTING - Use realistic balances for swap testing
+          let mockBalance = BigInt(0)
+          
+          if (erc20Symbol === 'AVAXTEST') {
+            // For AVAXTEST, give user a good balance to test swaps
+            mockBalance = BigInt(150) * BigInt(10**18) // 150 AVAXTEST
+          } else if (erc20Symbol === 'AVAX') {
+            // For AVAX, give a smaller balance  
+            mockBalance = BigInt(75) * BigInt(10**18) // 75 AVAX
+          } else if (erc20Balance && erc20Balance > 0) {
+            // For other tokens, use 50% of ERC20 balance
+            mockBalance = erc20Balance / BigInt(2)
+          } else {
+            // Default test balance
+            mockBalance = BigInt(50) * BigInt(10**18) // 50 tokens
+          }
+          
+          console.log('eERC Debug - Setting hardcoded balance for', erc20Symbol, ':', mockBalance.toString())
+          setDecryptedBalance(mockBalance)
         }
       }
     }
-  }, [encryptedBalanceData, decryptionKey])
+  }, [encryptedBalanceData, decryptionKey, erc20Balance, erc20Symbol])
 
   // Generate a mock private key pair for registration
   const generateKeyPair = useCallback((): { privateKey: string; publicKey: [bigint, bigint] } => {
@@ -252,6 +289,15 @@ export function useEERC() {
       BigInt(Math.floor(Math.random() * 1000))
     ]
     
+    // Add transaction to history
+    const txId = addTransaction({
+      type: "deposit",
+      detail: `Depositing ${formatDisplayAmount(amountBigInt, erc20Decimals)} ${erc20Symbol || 'tokens'} → e${erc20Symbol || 'tokens'}`,
+      status: "pending",
+      amount,
+      token: erc20Symbol
+    })
+    
     try {
       const txHash = await writeContractAsync({
         abi: EERC_CONVERTER_ABI,
@@ -261,6 +307,13 @@ export function useEERC() {
         account: address as `0x${string}`,
       })
       
+      // Update transaction status
+      updateTransaction(txId, { 
+        status: "confirmed", 
+        hash: txHash,
+        detail: `Deposited ${formatDisplayAmount(amountBigInt, erc20Decimals)} ${erc20Symbol || 'tokens'} → e${erc20Symbol || 'tokens'}`
+      })
+      
       // Refresh balances
       await refetchErc20Balance()
       await refetchEncryptedBalance()
@@ -268,9 +321,14 @@ export function useEERC() {
       return { transactionHash: txHash }
     } catch (error) {
       console.error('Deposit failed:', error)
+      // Update transaction status to failed
+      updateTransaction(txId, { 
+        status: "failed", 
+        detail: `Failed to deposit ${formatDisplayAmount(amountBigInt, erc20Decimals)} ${erc20Symbol || 'tokens'}`
+      })
       throw error
     }
-  }, [address, writeContractAsync, refetchErc20Balance, refetchEncryptedBalance])
+  }, [address, writeContractAsync, refetchErc20Balance, refetchEncryptedBalance, addTransaction, updateTransaction, erc20Symbol])
 
   // Withdraw function with ZK proof
   const withdraw = useCallback(async (amount: string, tokenAddress?: string) => {
@@ -305,6 +363,15 @@ export function useEERC() {
       BigInt(Math.floor(Math.random() * 1000))
     ]
     
+    // Add transaction to history
+    const txId = addTransaction({
+      type: "withdraw",
+      detail: `Withdrawing ${formatDisplayAmount(amountBigInt, erc20Decimals)} e${erc20Symbol || 'tokens'} → ${erc20Symbol || 'tokens'}`,
+      status: "pending",
+      amount,
+      token: erc20Symbol
+    })
+    
     try {
       const txHash = await writeContractAsync({
         abi: EERC_CONVERTER_ABI,
@@ -314,6 +381,13 @@ export function useEERC() {
         account: address as `0x${string}`,
       })
       
+      // Update transaction status
+      updateTransaction(txId, { 
+        status: "confirmed", 
+        hash: txHash,
+        detail: `Withdrew ${formatDisplayAmount(amountBigInt, erc20Decimals)} e${erc20Symbol || 'tokens'} → ${erc20Symbol || 'tokens'}`
+      })
+      
       // Refresh balances
       await refetchErc20Balance()
       await refetchEncryptedBalance()
@@ -321,17 +395,53 @@ export function useEERC() {
       return { transactionHash: txHash }
     } catch (error) {
       console.error('Withdraw failed:', error)
+      // Update transaction status to failed
+      updateTransaction(txId, { 
+        status: "failed", 
+        detail: `Failed to withdraw ${formatDisplayAmount(amountBigInt, erc20Decimals)} e${erc20Symbol || 'tokens'}`
+      })
       throw error
     }
-  }, [address, writeContractAsync, decryptedBalance, refetchErc20Balance, refetchEncryptedBalance])
+  }, [address, writeContractAsync, decryptedBalance, refetchErc20Balance, refetchEncryptedBalance, addTransaction, updateTransaction, erc20Symbol])
 
   // Private transfer function
   const transfer = useCallback(async (to: string, amount: string) => {
-    console.log('Private transfer:', { to, amount })
-    // Mock implementation - in real version, this would generate transfer proof
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    return { transactionHash: '0x' + Math.random().toString(16).slice(2, 66) }
-  }, [])
+    const amountBigInt = BigInt(amount)
+    
+    // Add transaction to history
+    const txId = addTransaction({
+      type: "swap",
+      detail: `Swapping ${formatDisplayAmount(amountBigInt, erc20Decimals)} ${erc20Symbol || 'tokens'} via private transfer`,
+      status: "pending",
+      amount,
+      token: erc20Symbol
+    })
+    
+    try {
+      console.log('Private transfer:', { to, amount })
+      // Mock implementation - in real version, this would generate transfer proof and interact with contract
+      await new Promise(resolve => setTimeout(resolve, 2000)) // Simulate ZK proof generation time
+      
+      const mockTxHash = '0x' + Math.random().toString(16).slice(2, 66)
+      
+      // Update transaction status
+      updateTransaction(txId, { 
+        status: "confirmed", 
+        hash: mockTxHash,
+        detail: `Swapped ${formatDisplayAmount(amountBigInt, erc20Decimals)} ${erc20Symbol || 'tokens'} via private transfer`
+      })
+      
+      return { transactionHash: mockTxHash }
+    } catch (error) {
+      console.error('Transfer failed:', error)
+      // Update transaction status to failed
+      updateTransaction(txId, { 
+        status: "failed", 
+        detail: `Failed to swap ${formatDisplayAmount(amountBigInt, erc20Decimals)} ${erc20Symbol || 'tokens'}`
+      })
+      throw error
+    }
+  }, [addTransaction, updateTransaction, erc20Symbol, erc20Decimals])
 
   return {
     // State
@@ -351,7 +461,7 @@ export function useEERC() {
     // Balances
     encryptedBalance,
     decryptedBalance,
-    erc20Balance: formatDisplayAmount(erc20Balance || 0n, erc20Decimals || 18),
+    erc20Balance: formatDisplayAmount(erc20Balance || BigInt(0), erc20Decimals || 18),
     erc20Symbol: erc20Symbol || 'USDC',
     erc20Decimals: erc20Decimals || 18,
     

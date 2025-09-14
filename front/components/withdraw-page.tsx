@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useHardcodedWallet } from "@/hooks/useHardcodedWallet"
 import { useEERC } from "@/hooks/useEERC"
@@ -36,19 +36,46 @@ export default function WithdrawPage() {
   // Convert decrypted balance to display format
   const balanceInTokens = parseFloat((Number(decryptedBalance) / Math.pow(10, erc20Decimals || 18)).toFixed(6))
 
-  // Real tokens with actual balance
+  // Real tokens with actual balance - only show tokens with non-zero balance
   const tokens = useMemo<Token[]>(
-    () => [
-      { symbol: "eUSDC", name: "Encrypted USD Coin", balance: balanceInTokens, priceUsd: 1 },
-      { symbol: "eDAI", name: "Encrypted DAI", balance: 0, priceUsd: 1 },
-      { symbol: "eETH", name: "Encrypted ETH", balance: 0, priceUsd: 1600 },
-    ],
-    [balanceInTokens],
+    () => {
+      const realTokens = []
+      
+      // Add the actual token with balance
+      if (erc20Symbol && balanceInTokens > 0) {
+        realTokens.push({
+          symbol: `e${erc20Symbol}`, 
+          name: `Encrypted ${erc20Symbol}`, 
+          balance: balanceInTokens, 
+          priceUsd: 1 // For now, assume 1:1 with USD for simplicity
+        })
+      }
+      
+      // If no balance, still show the token but with 0 balance for UX
+      if (realTokens.length === 0) {
+        realTokens.push({
+          symbol: erc20Symbol ? `e${erc20Symbol}` : "eUSDC",
+          name: erc20Symbol ? `Encrypted ${erc20Symbol}` : "Encrypted USD Coin",
+          balance: 0,
+          priceUsd: 1
+        })
+      }
+      
+      return realTokens
+    },
+    [balanceInTokens, erc20Symbol],
   )
 
   // UI State
   const [selectedToken, setSelectedToken] = useState<Token>(tokens[0])
   const [amount, setAmount] = useState<string>("")
+
+  // Update selected token when tokens change (e.g. when balance updates)
+  useEffect(() => {
+    if (tokens.length > 0 && tokens[0].symbol !== selectedToken.symbol) {
+      setSelectedToken(tokens[0])
+    }
+  }, [tokens, selectedToken.symbol])
   const [showTokenModal, setShowTokenModal] = useState(false)
   const [tokenQuery, setTokenQuery] = useState("")
 

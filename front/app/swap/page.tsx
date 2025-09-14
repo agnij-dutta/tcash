@@ -14,32 +14,95 @@ import {
 } from "lucide-react"
 import { useHardcodedWallet } from "@/hooks/useHardcodedWallet"
 import { useEERC } from "@/hooks/useEERC"
+import { usePrivateSwap } from "@/hooks/usePrivateSwap"
 
 export default function TsunamiSwap() {
   const { address, isConnected } = useHardcodedWallet()
-  const { isRegistered, decryptedBalance, erc20Symbol, erc20Decimals, transfer } = useEERC()
+  const { isRegistered, decryptedBalance, erc20Symbol, erc20Decimals } = useEERC()
+  const { executePrivateSwap, getExchangeRate } = usePrivateSwap()
 
-  // Real token list based on actual balances
-  const tokenList = useMemo(
-    () => [
-      { 
-        symbol: `e${erc20Symbol || 'USDC'}`, 
-        name: `Encrypted ${erc20Symbol || 'USD Coin'}`, 
-        balance: parseFloat((Number(decryptedBalance) / Math.pow(10, erc20Decimals || 18)).toFixed(6))
+  // Hardcoded token list with realistic balances for testing
+  const tokenList = useMemo(() => {
+    // HARDCODED VALUES FOR SWAP TESTING
+    const tokens = [
+      {
+        symbol: "eAVAXTEST",
+        name: "Encrypted AVAX Test",
+        balance: 150.0  // Good balance for testing swaps
       },
-      { symbol: "eDAI", name: "Encrypted DAI", balance: 0 },
-      { symbol: "eAVAX", name: "Encrypted AVAX", balance: 0 },
-      { symbol: "eUSDT", name: "Encrypted Tether", balance: 0 },
-    ],
-    [decryptedBalance, erc20Symbol, erc20Decimals],
-  )
+      {
+        symbol: "eAVAX", 
+        name: "Encrypted AVAX",
+        balance: 75.0   // Smaller balance 
+      },
+      {
+        symbol: "eUSDC",
+        name: "Encrypted USDC", 
+        balance: 2500.0 // Large stablecoin balance
+      },
+      {
+        symbol: "eDAI",
+        name: "Encrypted DAI",
+        balance: 1800.0 // Another stablecoin
+      }
+    ]
+    
+    console.log('Swap - Using hardcoded token balances:', tokens)
+    return tokens
+  }, [])
 
   // Selection + amounts
-  const [fromToken, setFromToken] = useState(tokenList[0]) // eUSDC
-  const [toToken, setToToken] = useState(tokenList[1]) // eDAI
+  const [fromToken, setFromToken] = useState(tokenList[0] || { symbol: "eAVAX", name: "Encrypted AVAX", balance: 0 })
+  const [toToken, setToToken] = useState(tokenList[1] || { symbol: "eAVAXTEST", name: "Encrypted AVAX Test", balance: 0 })
   const [fromAmount, setFromAmount] = useState<string>("")
   const [toAmount, setToAmount] = useState<string>("")
   const [insufficientBalance, setInsufficientBalance] = useState(false)
+
+  // Update selected tokens when tokenList changes and calculate exchange rates
+  useEffect(() => {
+    if (tokenList.length > 0) {
+      // Default to eAVAXTEST -> eAVAX swap (most common test case)
+      const avaxTestToken = tokenList.find(t => t.symbol === "eAVAXTEST")
+      const avaxToken = tokenList.find(t => t.symbol === "eAVAX")
+      
+      if (avaxTestToken && avaxToken) {
+        setFromToken(avaxTestToken)
+        setToToken(avaxToken)
+      } else {
+        setFromToken(tokenList[0])
+        setToToken(tokenList[1] || tokenList[0])
+      }
+    }
+  }, [tokenList])
+
+  // Calculate exchange rate and output amount
+  useEffect(() => {
+    if (fromAmount && fromToken && toToken && fromToken.symbol !== toToken.symbol) {
+      const rate = getExchangeRate(fromToken.symbol, toToken.symbol)
+      const outputAmount = (parseFloat(fromAmount) * rate).toFixed(6)
+      setToAmount(outputAmount)
+    } else {
+      setToAmount("")
+    }
+  }, [fromAmount, fromToken, toToken, getExchangeRate])
+
+  // Calculate current exchange rate for display
+  const price = useMemo(() => {
+    if (fromToken && toToken && fromToken.symbol !== toToken.symbol) {
+      return getExchangeRate(fromToken.symbol, toToken.symbol)
+    }
+    return 1
+  }, [fromToken, toToken, getExchangeRate])
+
+  // Check for insufficient balance
+  useEffect(() => {
+    if (fromAmount && fromToken) {
+      const amt = Number.parseFloat(fromAmount.replace(/,/g, ""))
+      setInsufficientBalance(amt > fromToken.balance)
+    } else {
+      setInsufficientBalance(false)
+    }
+  }, [fromAmount, fromToken])
 
   // UI state
   const [selectingSide, setSelectingSide] = useState<"from" | "to" | null>(null)
@@ -50,14 +113,16 @@ export default function TsunamiSwap() {
   const [successOpen, setSuccessOpen] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [toasts, setToasts] = useState<{ id: number; message: string }[]>([])
+  
+  // Store completed swap details for success modal
+  const [completedSwap, setCompletedSwap] = useState<{
+    fromAmount: string
+    toAmount: string  
+    fromToken: string
+    toToken: string
+  } | null>(null)
 
-  // Derived quote (fake pricing)
-  const price = useMemo(() => {
-    // simple mock: 1 eUSDC = 0.99 eDAI, otherwise 1:1
-    if (fromToken.symbol === "eUSDC" && toToken.symbol === "eDAI") return 0.99
-    if (fromToken.symbol === "eDAI" && toToken.symbol === "eUSDC") return 1 / 0.99
-    return 1
-  }, [fromToken, toToken])
+  // Removed old price calculation - using the new dynamic one above
 
   useEffect(() => {
     const amt = Number.parseFloat(fromAmount.replace(/,/g, ""))
@@ -108,6 +173,7 @@ export default function TsunamiSwap() {
   async function onSwap() {
     setErrorMessage(null)
     const amt = Number.parseFloat(fromAmount.replace(/,/g, ""))
+    
     if (!isFinite(amt) || amt <= 0) {
       setErrorMessage("Enter a valid amount")
       return
@@ -120,30 +186,45 @@ export default function TsunamiSwap() {
       setErrorMessage("Please connect wallet and register with eERC first")
       return
     }
+    if (!fromToken || !toToken || fromToken.symbol === toToken.symbol) {
+      setErrorMessage("Please select different tokens to swap")
+      return
+    }
 
     try {
       setIsSwapping(true)
-      addToast("Generating zk proof...")
+      addToast("🔐 Generating zero-knowledge proof...")
       
-      // In a real swap implementation, this would be the recipient address of a DEX contract
-      // For now, we'll simulate a private transfer to demonstrate the functionality
-      const dexRecipient = "0x742d35Cc6634C0532925a3b8D1C9dFd0F4F4b8Cb" // Mock DEX contract
-      const amountWei = (amt * Math.pow(10, erc20Decimals || 18)).toString()
+      // Execute the privacy-preserving swap
+      const swapResult = await executePrivateSwap(
+        fromToken.symbol,
+        toToken.symbol,
+        fromAmount,
+        decryptedBalance
+      )
       
-      await new Promise((r) => setTimeout(r, 1000))
-      addToast("Proof generated successfully")
+      addToast(`✅ Swapped ${swapResult.fromAmount} ${fromToken.symbol} → ${swapResult.toAmount} ${toToken.symbol}`)
       
-      // Execute private transfer to DEX
-      await transfer(dexRecipient, amountWei)
+      // Store completed swap details for success modal
+      setCompletedSwap({
+        fromAmount: swapResult.fromAmount,
+        toAmount: swapResult.toAmount,
+        fromToken: fromToken.symbol,
+        toToken: toToken.symbol
+      })
       
-      addToast("Private swap executed on PrivacyRouter")
-      await new Promise((r) => setTimeout(r, 500))
-      
+      // Update UI state
+      setFromAmount("")
+      setToAmount("")
       setIsSwapping(false)
       setSuccessOpen(true)
+      
+      console.log('🎉 Swap completed:', swapResult)
+      
     } catch (e) {
       setIsSwapping(false)
       setErrorMessage(`Swap failed: ${e instanceof Error ? e.message : 'Unknown error'}`)
+      console.error('💥 Swap error:', e)
     }
   }
 
@@ -356,9 +437,13 @@ export default function TsunamiSwap() {
                     1 {fromToken.symbol} = {price.toFixed(6)} {toToken.symbol}
                   </span>
                   <TrendingUp className="w-5 h-5 text-emerald-400" />
-                  <span className="text-emerald-300 text-base font-semibold">5.62% (24H)</span>
+                  <span className="text-emerald-300 text-base font-semibold">
+                    {(Math.random() * 10 - 5).toFixed(2)}% (24H)
+                  </span>
                 </div>
-                <div className="text-white text-sm font-medium">Rate is for reference only. Updated just now</div>
+                <div className="text-white text-sm font-medium">
+                  Privacy DEX Aggregator • Updated just now
+                </div>
                 {/* Transaction details */}
                 <div className="mt-4">
                   <button
@@ -480,7 +565,10 @@ export default function TsunamiSwap() {
       {/* Success modal */}
       {successOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setSuccessOpen(false)} />
+          <div className="absolute inset-0 bg-black/50" onClick={() => {
+            setSuccessOpen(false)
+            setCompletedSwap(null)
+          }} />
           <div
             className="relative w-full max-w-md mx-auto backdrop-blur-3xl border border-white/15 rounded-2xl p-8 text-center shadow-[0_12px_48px_rgba(0,0,0,0.6)] bg-black/60 text-white"
           >
@@ -494,22 +582,28 @@ export default function TsunamiSwap() {
               style={{ background: "rgba(255,255,255,0.08)" }}
             >
               <div className="font-medium text-base">
-                From: {fromAmount || "0.0"} {fromToken.symbol}
+                From: {completedSwap?.fromAmount || "0.0"} {completedSwap?.fromToken || fromToken.symbol}
               </div>
               <div className="font-medium text-base">
-                To: {toAmount || "0.0"} {toToken.symbol}
+                To: {completedSwap?.toAmount || "0.0"} {completedSwap?.toToken || toToken.symbol}
               </div>
             </div>
             <div className="flex items-center justify-center gap-4">
               <button
                 className="px-5 py-3 rounded-full bg-white/10 border border-white/10 text-white font-medium hover:bg-white/15 transition-colors"
-                onClick={() => setSuccessOpen(false)}
+                onClick={() => {
+                  setSuccessOpen(false)
+                  setCompletedSwap(null)
+                }}
               >
                 Back to Dashboard
               </button>
               <button
                 className="px-5 py-3 rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold hover:brightness-110 transition-all"
-                onClick={() => setSuccessOpen(false)}
+                onClick={() => {
+                  setSuccessOpen(false)
+                  setCompletedSwap(null)
+                }}
               >
                 View in Local History
               </button>

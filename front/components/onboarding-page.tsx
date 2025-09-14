@@ -255,16 +255,16 @@ export default function OnboardingPage() {
                 {/* 2. Connect Wallet (now Step 2) */}
 
                 {step === 1 && (
-                  <Card>
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-white/90 text-[#0a0b0e] flex items-center justify-center">
-                        <Wallet className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1">
+                    <Card>
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-white/90 text-[#0a0b0e] flex items-center justify-center">
+                          <Wallet className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1">
                         <div className="text-white font-semibold">Connect your wallet</div>
                         <div className="text-white/70 text-sm">Use RainbowKit to connect and continue.</div>
                       </div>
-                    </div>
+                          </div>
                     <div className="mt-6 flex items-center justify-center">
                       <ConnectButton />
                     </div>

@@ -32,11 +32,7 @@ type PublicToken = {
   balance: number
 }
 
-const PUBLIC_TOKENS: PublicToken[] = [
-  { symbol: "AVAX", name: "Avalanche", priceUsd: 25, balance: 100 },
-  { symbol: "USDC", name: "USD Coin", priceUsd: 1, balance: 2350 },
-  { symbol: "DAI", name: "DAI Stablecoin", priceUsd: 1, balance: 1840 },
-]
+// PUBLIC_TOKENS will be created dynamically using real balance data
 
 
 export default function DepositPage() {
@@ -131,10 +127,8 @@ export default function DepositPage() {
   const [successOpen, setSuccessOpen] = useState(false)
   const [isDepositing, setIsDepositing] = useState(false)
 
-  const [recent, setRecent] = useState<{ label: string; status: "confirmed" | "pending" }[]>([
-    { label: "500 USDC → 500 eUSDC", status: "confirmed" },
-    { label: "1000 USDC → 1000 eUSDC", status: "pending" },
-  ])
+  // Recent transactions - will be populated by real transaction history
+  const [recent, setRecent] = useState<{ label: string; status: "confirmed" | "pending" }[]>([])
 
   // Derived values (UI only)
   const numericAmount = useMemo(() => Number.parseFloat(amount.replace(/,/g, "")) || 0, [amount])
