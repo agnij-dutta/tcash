@@ -125,24 +125,13 @@ export function useEERC() {
         })
         
         if (decryptionKey) {
-          // HARDCODED VALUES FOR TESTING - Use realistic balances for swap testing
+          // HARDCODED VALUES FOR DEMO - Always give good balances for testing
           let mockBalance = BigInt(0)
           
-          if (erc20Symbol === 'AVAXTEST') {
-            // For AVAXTEST, give user a good balance to test swaps
-            mockBalance = BigInt(150) * BigInt(10**18) // 150 AVAXTEST
-          } else if (erc20Symbol === 'AVAX') {
-            // For AVAX, give a smaller balance  
-            mockBalance = BigInt(75) * BigInt(10**18) // 75 AVAX
-          } else if (erc20Balance && erc20Balance > 0) {
-            // For other tokens, use 50% of ERC20 balance
-            mockBalance = erc20Balance / BigInt(2)
-          } else {
-            // Default test balance
-            mockBalance = BigInt(50) * BigInt(10**18) // 50 tokens
-          }
+          // Always give a good test balance regardless of contract responses
+          mockBalance = BigInt(150) * BigInt(10**18) // 150 tokens for demo
           
-          console.log('eERC Debug - Setting hardcoded balance for', erc20Symbol, ':', mockBalance.toString())
+          console.log('eERC Debug - Setting hardcoded demo balance:', mockBalance.toString(), 'for symbol:', erc20Symbol || 'AVAXTEST')
           setDecryptedBalance(mockBalance)
         }
       }

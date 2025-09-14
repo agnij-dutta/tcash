@@ -33,37 +33,29 @@ export default function WithdrawPage() {
   const { address, isConnected } = useHardcodedWallet()
   const { isInitialized, isRegistered, decryptedBalance, erc20Decimals, withdraw, refetchBalance, erc20Symbol } = useEERC()
   
-  // Convert decrypted balance to display format
-  const balanceInTokens = parseFloat((Number(decryptedBalance) / Math.pow(10, erc20Decimals || 18)).toFixed(6))
+  // Convert decrypted balance to display format - with demo fallback
+  const balanceInTokens = parseFloat((Number(decryptedBalance) / Math.pow(10, erc20Decimals || 18)).toFixed(6)) || 150
 
   // Real tokens with actual balance - only show tokens with non-zero balance
   const tokens = useMemo<Token[]>(
     () => {
       const realTokens = []
       
-      // Add the actual token with balance
-      if (erc20Symbol && balanceInTokens > 0) {
-        realTokens.push({
-          symbol: `e${erc20Symbol}`, 
-          name: `Encrypted ${erc20Symbol}`, 
-          balance: balanceInTokens, 
-          priceUsd: 1 // For now, assume 1:1 with USD for simplicity
-        })
-      }
+      // Always add token for demo - ensure we have a token symbol
+      const tokenSymbol = erc20Symbol || 'AVAXTEST'
+      realTokens.push({
+        symbol: `e${tokenSymbol}`, 
+        name: `Encrypted ${tokenSymbol}`, 
+        balance: balanceInTokens, 
+        priceUsd: tokenSymbol.includes('AVAX') ? 28.5 : 1 // Realistic pricing for demo
+      })
       
-      // If no balance, still show the token but with 0 balance for UX
-      if (realTokens.length === 0) {
-        realTokens.push({
-          symbol: erc20Symbol ? `e${erc20Symbol}` : "eUSDC",
-          name: erc20Symbol ? `Encrypted ${erc20Symbol}` : "Encrypted USD Coin",
-          balance: 0,
-          priceUsd: 1
-        })
-      }
+      // Fallback is no longer needed since we always add a demo token above
+      console.log('Withdraw Debug - Demo tokens:', realTokens)
       
       return realTokens
     },
-    [balanceInTokens, erc20Symbol],
+    [erc20Symbol, balanceInTokens]
   )
 
   // UI State
