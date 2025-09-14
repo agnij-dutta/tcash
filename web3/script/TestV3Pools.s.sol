@@ -24,7 +24,7 @@ contract TestV3PoolsScript is Script {
     address constant USDC_FUJI = 0x5425890298aed601595a70AB815c96711a31Bc65;
     address constant WAVAX_FUJI = 0xd00ae08403B9bbb9124bB305C09058E32C39A48c;
 
-    function run() external view {
+    function run() external {
         console.log("=== Testing Uniswap V3 Pool Connectivity on Fuji ===");
         console.log("Factory:", address(FACTORY));
         console.log("Quoter:", address(QUOTER));
@@ -41,24 +41,24 @@ contract TestV3PoolsScript is Script {
             console.log("Pool address:", pool);
 
             if (pool != address(0)) {
-                console.log("✅ Pool exists!");
+                console.log("Pool exists!");
 
                 // Test quote for 1 USDC -> WAVAX
                 try QUOTER.quoteExactInputSingle(USDC_FUJI, WAVAX_FUJI, fees[i], 1e6, 0) returns (uint256 quote) {
                     console.log("Quote: 1 USDC =", quote, "WAVAX wei");
                     console.log("Quote: 1 USDC =", quote / 1e18, "WAVAX");
                 } catch {
-                    console.log("❌ Quote failed - pool may have no liquidity");
+                    console.log("Quote failed - pool may have no liquidity");
                 }
 
                 // Test reverse quote
                 try QUOTER.quoteExactInputSingle(WAVAX_FUJI, USDC_FUJI, fees[i], 1e18, 0) returns (uint256 quote) {
                     console.log("Reverse: 1 WAVAX =", quote, "USDC (6 decimals)");
                 } catch {
-                    console.log("❌ Reverse quote failed");
+                    console.log("Reverse quote failed");
                 }
             } else {
-                console.log("❌ Pool does not exist");
+                console.log("Pool does not exist");
             }
         }
 

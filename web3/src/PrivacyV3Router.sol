@@ -91,6 +91,9 @@ contract PrivacyV3Router is IPrivacyRouter, IUniswapV3SwapCallback, Pausable {
         bool isSpendAndDeposit;
     }
 
+    // Temporary storage for proof during callback
+    bytes private _tempProof;
+
     // Events for privacy tracking
     event PrivateSwapInitiated(bytes32 indexed nullifier, address indexed tokenIn, address indexed tokenOut);
     event SwapQuoteObtained(address indexed tokenIn, address indexed tokenOut, uint256 amountIn, uint256 expectedOut);
@@ -100,6 +103,7 @@ contract PrivacyV3Router is IPrivacyRouter, IUniswapV3SwapCallback, Pausable {
     error InvalidPool();
     error UnauthorizedCallback();
     error InsufficientOutput();
+    error ProofHandlingFailed();
 
     constructor(address vault_) {
         vault = IShieldedVault(vault_);
@@ -115,6 +119,35 @@ contract PrivacyV3Router is IPrivacyRouter, IUniswapV3SwapCallback, Pausable {
 
     function transferOwnership(address newOwner) external override onlyOwner {
         owner = newOwner;
+    }
+
+    /**
+     * @dev Interface-compliant function for IPrivacyRouter
+     */
+    function spendSwapAndDeposit(
+        bytes calldata proof,
+        bytes32 root,
+        bytes32 nullifier,
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        uint256 minAmountOut,
+        bytes calldata encryptedRecipientData,
+        uint256 deadline
+    ) external override returns (uint256 amountOut) {
+        // Use default medium fee tier (0.3%)
+        return spendSwapAndDepositV3(
+            proof,
+            root,
+            nullifier,
+            tokenIn,
+            tokenOut,
+            amountIn,
+            minAmountOut,
+            3000, // 0.3% fee
+            encryptedRecipientData,
+            deadline
+        );
     }
 
     /**
@@ -141,7 +174,7 @@ contract PrivacyV3Router is IPrivacyRouter, IUniswapV3SwapCallback, Pausable {
         uint24 fee,
         bytes calldata encryptedRecipientData,
         uint256 deadline
-    ) external whenNotPaused returns (uint256 amountOut) {
+    ) public whenNotPaused returns (uint256 amountOut) {
         if (block.timestamp > deadline) revert DeadlineExpired();
 
         emit PrivateSwapInitiated(nullifier, tokenIn, tokenOut);
@@ -154,6 +187,9 @@ contract PrivacyV3Router is IPrivacyRouter, IUniswapV3SwapCallback, Pausable {
         address token0 = IUniswapV3Pool(pool).token0();
         address token1 = IUniswapV3Pool(pool).token1();
         bool zeroForOne = tokenIn == token0;
+
+        // Store proof temporarily for callback use
+        _tempProof = proof;
 
         // Prepare callback data
         SwapCallbackData memory callbackData = SwapCallbackData({
@@ -203,6 +239,9 @@ contract PrivacyV3Router is IPrivacyRouter, IUniswapV3SwapCallback, Pausable {
             emit PrivateDepositCompleted(tokenOut, amountOut, recipientHash);
             emit DepositedToEERC(tokenOut, amountOut);
         }
+
+        // Clear temporary proof for security
+        delete _tempProof;
     }
 
     /**
@@ -244,7 +283,7 @@ contract PrivacyV3Router is IPrivacyRouter, IUniswapV3SwapCallback, Pausable {
         if (callbackData.isSpendAndDeposit && tokenToPay == callbackData.tokenIn) {
             // Execute spend via vault (validates ZK proof and transfers funds to this contract)
             vault.executeSpend(
-                "", // proof will be validated in the main function
+                _tempProof, // Use stored proof
                 callbackData.root,
                 callbackData.nullifier,
                 callbackData.tokenIn,
@@ -253,6 +292,9 @@ contract PrivacyV3Router is IPrivacyRouter, IUniswapV3SwapCallback, Pausable {
                 callbackData.minAmountOut
             );
             emit SpendRecorded(callbackData.nullifier, callbackData.root, tx.origin);
+
+            // Clear temporary proof for security
+            delete _tempProof;
         }
 
         // Pay the pool
@@ -320,7 +362,7 @@ contract PrivacyV3Router is IPrivacyRouter, IUniswapV3SwapCallback, Pausable {
         address tokenOut,
         uint256 amountIn,
         uint24 fee
-    ) external view returns (uint256 amountOut) {
+    ) external returns (uint256 amountOut) {
         return UNISWAP_V3_QUOTER.quoteExactInputSingle(
             tokenIn,
             tokenOut,
@@ -335,6 +377,25 @@ contract PrivacyV3Router is IPrivacyRouter, IUniswapV3SwapCallback, Pausable {
      */
     function poolExists(address tokenA, address tokenB, uint24 fee) external view returns (bool) {
         return UNISWAP_V3_FACTORY.getPool(tokenA, tokenB, fee) != address(0);
+    }
+
+    /**
+     * @dev Withdraw from EERC back to public ERC20 with compliance gating
+     */
+    function withdrawFromEERC(
+        address token,
+        uint256 amount,
+        address recipient,
+        bytes calldata withdrawProof
+    ) external override whenNotPaused {
+        // Check compliance if enabled
+        if (address(compliance) != address(0)) {
+            if (!compliance.isExitAllowed(token, amount)) revert ComplianceBlocked();
+        }
+
+        // Execute withdrawal from EERC converter
+        converter.withdraw(token, amount, recipient, withdrawProof);
+        emit WithdrawnFromEERC(token, recipient, amount);
     }
 
     /**
