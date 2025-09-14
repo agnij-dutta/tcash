@@ -245,7 +245,7 @@ export default function OnboardingPage() {
         <div className="pointer-events-none absolute inset-0 bg-black/10" />
 
         {/* Container */}
-        <div className="w-full max-w-4xl mx-auto px-4 pb-10 relative z-10 pt-8">
+        <div className="w-full max-w-4xl mx-auto px-4 pb-10 relative z-10 pt-24">
           <div className="relative rounded-[32px] overflow-hidden shadow-[0_24px_70px_rgba(0,0,0,0.55)]">
             <div className="absolute inset-0 opacity-45 pointer-events-none bg-[radial-gradient(120%_120%_at_50%_0%,rgba(255,255,255,0.16)_0%,rgba(255,255,255,0.08)_40%,rgba(255,255,255,0.03)_100%)]" />
             <div
@@ -290,7 +290,7 @@ export default function OnboardingPage() {
                       </div>
                       <Button
                         onClick={next}
-                        className="mt-2 rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold px-6 h-11 hover:brightness-110"
+                        className="mt-2 rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold px-6 h-11 hover:bg-[#f1ff8a]"
                       >
                         Get Started
                       </Button>
@@ -319,7 +319,7 @@ export default function OnboardingPage() {
                             setMode("create")
                             next()
                           }}
-                          className="rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-white/15 px-5"
+                          className="rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-[#f1ff8a] hover:text-[#0a0b0e] hover:border-transparent px-5"
                         >
                           Continue
                         </Button>
@@ -358,13 +358,13 @@ export default function OnboardingPage() {
                                 next()
                               }
                             }}
-                            className="rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-white/15 px-5"
+                            className="rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-[#f1ff8a] hover:text-[#0a0b0e] hover:border-transparent px-5"
                           >
                             Continue
                           </Button>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <button className="p-2 rounded-lg border border-white/10 bg-white/10 text-white/80">
+                              <button className="p-2 rounded-lg border border-white/10 bg-white/10 text-white/80 hover:bg-[#f1ff8a] hover:text-[#0a0b0e] hover:border-transparent">
                                 <Info className="w-5 h-5" />
                               </button>
                             </TooltipTrigger>
@@ -390,7 +390,7 @@ export default function OnboardingPage() {
                           </div>
                           <Button
                             onClick={() => setSeedShown(true)}
-                            className="rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold px-5"
+                            className="rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold px-5 hover:bg-[#f1ff8a]"
                           >
                             Reveal
                           </Button>
@@ -433,7 +433,7 @@ export default function OnboardingPage() {
                         <Button
                           disabled={!confirmOk}
                           onClick={next}
-                          className="rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-white/15 px-5 disabled:opacity-50"
+                          className="rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-[#f1ff8a] hover:text-[#0a0b0e] hover:border-transparent px-5 disabled:opacity-50"
                         >
                           Continue
                         </Button>
@@ -451,7 +451,7 @@ export default function OnboardingPage() {
                     <div className="mt-4">
                       <Button
                         onClick={next}
-                        className="rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-white/15 px-5"
+                        className="rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-[#f1ff8a] hover:text-[#0a0b0e] hover:border-transparent px-5"
                       >
                         Continue
                       </Button>
@@ -492,7 +492,7 @@ export default function OnboardingPage() {
                           <Button
                             onClick={handleRegister}
                             disabled={isRegistering}
-                            className="w-full rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold hover:brightness-110 disabled:opacity-60"
+                            className="w-full rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold hover:bg-[#f1ff8a] disabled:opacity-60"
                           >
                             {isRegistering ? (
                               <>
@@ -540,7 +540,7 @@ export default function OnboardingPage() {
                       {registrationStep === 'complete' && (
                         <Button
                           onClick={next}
-                          className="w-full rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-white/15"
+                          className="w-full rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-[#f1ff8a] hover:text-[#0a0b0e] hover:border-transparent"
                         >
                           Continue
                         </Button>
@@ -569,7 +569,7 @@ export default function OnboardingPage() {
                       </div>
                       <Button
                         onClick={rotateStealth}
-                        className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-white/15 px-4 py-2 text-sm"
+                        className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-[#f1ff8a] hover:text-[#0a0b0e] hover:border-transparent px-4 py-2 text-sm"
                       >
                         <RefreshCw className="w-4 h-4" /> Rotate
                       </Button>
@@ -602,7 +602,7 @@ export default function OnboardingPage() {
                     <div className="mt-4">
                       <Button
                         onClick={next}
-                        className="rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-white/15 px-5"
+                        className="rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-[#f1ff8a] hover:text-[#0a0b0e] hover:border-transparent px-5"
                       >
                         Okay, got it
                       </Button>
@@ -638,7 +638,7 @@ export default function OnboardingPage() {
                         className={`px-4 py-4 rounded-xl border transition text-left ${
                           compliance === "retail"
                             ? "bg-white/15 border-white/25 text-white"
-                            : "bg-white/10 border-white/15 text-white/85 hover:bg-white/15"
+                            : "bg-white/10 border-white/15 text-white/85 hover:bg-[#f1ff8a] hover:text-[#0a0b0e] hover:border-transparent"
                         }`}
                       >
                         <div className="text-white font-medium">Retail Mode</div>
@@ -649,7 +649,7 @@ export default function OnboardingPage() {
                         className={`px-4 py-4 rounded-xl border transition text-left ${
                           compliance === "institutional"
                             ? "bg-white/15 border-white/25 text-white"
-                            : "bg-white/10 border-white/15 text-white/85 hover:bg-white/15"
+                            : "bg-white/10 border-white/15 text-white/85 hover:bg-[#f1ff8a] hover:text-[#0a0b0e] hover:border-transparent"
                         }`}
                       >
                         <div className="text-white font-medium">Institutional Mode</div>
@@ -659,7 +659,7 @@ export default function OnboardingPage() {
                     <div className="mt-4">
                       <Button
                         onClick={next}
-                        className="rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-white/15 px-5"
+                        className="rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-[#f1ff8a] hover:text-[#0a0b0e] hover:border-transparent px-5"
                       >
                         Continue
                       </Button>
@@ -682,7 +682,7 @@ export default function OnboardingPage() {
                     <div className="mt-4">
                       <Button
                         onClick={next}
-                        className="rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-white/15 px-5"
+                        className="rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-[#f1ff8a] hover:text-[#0a0b0e] hover:border-transparent px-5"
                       >
                         Continue
                       </Button>
@@ -710,13 +710,13 @@ export default function OnboardingPage() {
                     <div className="mt-4 grid sm:grid-cols-2 gap-3">
                       <Button
                         onClick={() => router.push("/dashboard")}
-                        className="h-12 w-full rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold hover:brightness-110 inline-flex items-center justify-center gap-2"
+                        className="h-12 w-full rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold hover:bg-[#f1ff8a] inline-flex items-center justify-center gap-2"
                       >
                         Go to Dashboard
                       </Button>
                       <Button
                         onClick={startFinish}
-                        className="h-12 w-full rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-white/15"
+                        className="h-12 w-full rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-[#f1ff8a] hover:text-[#0a0b0e] hover:border-transparent"
                       >
                         Finish
                       </Button>
@@ -731,7 +731,7 @@ export default function OnboardingPage() {
                     onClick={prev}
                     disabled={step === 0}
                     variant="outline"
-                    className="rounded-full bg-white/10 border border-white/15 text-white/85 hover:bg-white/15 inline-flex items-center gap-2 disabled:opacity-50"
+                    className="rounded-full bg-white/10 border border-white/15 text-white/85 hover:bg-[#f1ff8a] hover:text-[#0a0b0e] hover:border-transparent inline-flex items-center gap-2 disabled:opacity-50"
                   >
                     <ChevronLeft className="w-4 h-4" /> Back
                   </Button>
@@ -739,7 +739,7 @@ export default function OnboardingPage() {
                   <Button
                     onClick={next}
                     disabled={step === 7}
-                    className="rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-white/15 inline-flex items-center gap-2 disabled:opacity-50"
+                    className="rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-[#f1ff8a] hover:text-[#0a0b0e] hover:border-transparent inline-flex items-center gap-2 disabled:opacity-50"
                   >
                     Next <ChevronRight className="w-4 h-4" />
                   </Button>
