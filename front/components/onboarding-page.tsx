@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useEffect, useMemo, useState } from "react"
+import { ConnectButton } from "@rainbow-me/rainbowkit"
 import { useRouter } from "next/navigation"
 import { useDirectEERC } from "@/hooks/useDirectEERC"
 import { useHardcodedWallet } from "@/hooks/useHardcodedWallet"
@@ -152,7 +153,7 @@ export default function OnboardingPage() {
   }
 
   function next() {
-    setStep((s) => Math.min(7, s + 1))
+    setStep((s) => Math.min(6, s + 1))
   }
   function prev() {
     setStep((s) => Math.max(0, s - 1))
@@ -266,12 +267,12 @@ export default function OnboardingPage() {
                   </div>
                   <div className="text-sm font-light tracking-tight bg-gradient-to-b from-white via-zinc-300 to-zinc-500 bg-clip-text text-transparent">Tsunami Onboarding</div>
                 </div>
-                <div className="text-xs text-white/70">Step {step + 1} / 7</div>
+                <div className="text-xs text-white/70">Step {step + 1} / 6</div>
               </div>
 
               {/* Progress */}
               <div className="mt-4">
-                <Progress value={((step + 1) / 7) * 100} className="h-2 bg-white/10" />
+                <Progress value={((step + 1) / 6) * 100} className="h-2 bg-white/10" />
               </div>
 
               {/* Content */}
@@ -378,80 +379,26 @@ export default function OnboardingPage() {
                   </div>
                 )}
 
-                {/* 3. Key Backup (create only) or Import confirmation */}
-                {step === 2 && mode === "create" && (
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <Card>
-                      <div className="text-white font-semibold mb-2">Seed Phrase</div>
-                      {!seedShown ? (
-                        <div className="space-y-3">
-                          <div className="text-white/70 text-sm">
-                            Write this down. This is the only way to recover your private balance.
-                          </div>
-                          <Button
-                            onClick={() => setSeedShown(true)}
-                            className="rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold px-5 hover:bg-[#f1ff8a]"
-                          >
-                            Reveal
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          <div className="grid grid-cols-3 gap-2 text-sm">
-                            {seed.map((w, i) => (
-                              <div
-                                key={i}
-                                className="px-3 py-2 rounded-lg bg-white/10 border border-white/15 text-white/90 flex items-center gap-2"
-                              >
-                                <span className="text-white/60 text-[11px] w-4">{i + 1}.</span> {w}
-                              </div>
-                            ))}
-                          </div>
-                          <div className="text-xs text-white/60">
-                            Optional: Encrypt and save seed phrase in your cloud/drive.
-                          </div>
-                        </div>
-                      )}
-                    </Card>
-                    <Card>
-                      <div className="text-white font-semibold mb-2">Confirm Seed</div>
-                      <div className="text-white/70 text-sm">Please re-enter these words to confirm backup.</div>
-                      <div className="mt-3 space-y-2">
-                        {confirmIdx.map((i) => (
-                          <div key={i} className="flex items-center gap-3">
-                            <div className="text-xs text-white/70 w-20">Word {i + 1}</div>
-                            <Input
-                              value={confirmWords[i] || ""}
-                              onChange={(e) => setConfirmWords((prev) => ({ ...prev, [i]: e.target.value }))}
-                              placeholder="Enter word"
-                              className="bg-white/10 border-white/15 text-white placeholder:text-white/60"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                      <div className="mt-4">
-                        <Button
-                          disabled={!confirmOk}
-                          onClick={next}
-                          className="rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-[#f1ff8a] hover:text-[#0a0b0e] hover:border-transparent px-5 disabled:opacity-50"
-                        >
-                          Continue
-                        </Button>
-                      </div>
-                    </Card>
-                  </div>
-                )}
-
-                {step === 2 && mode === "import" && (
+                {/* 3. Connect Wallet (replacing previous Step 2 and 3) */}
+                {step === 2 && (
                   <Card>
-                    <div className="flex items-center gap-3 text-white/85 text-sm">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-300" /> Import ready. We created your local
-                      encrypted store.
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-white/90 text-[#0a0b0e] flex items-center justify-center">
+                        <Wallet className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-white font-semibold">Connect your wallet</div>
+                        <div className="text-white/70 text-sm">Use RainbowKit to connect and continue.</div>
+                      </div>
                     </div>
-                    <div className="mt-4">
+                    <div className="mt-6 flex items-center justify-center">
+                      <ConnectButton />
+                    </div>
+                    <div className="mt-6">
                       <Button
                         onClick={next}
-                        className="rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-[#f1ff8a] hover:text-[#0a0b0e] hover:border-transparent px-5"
+                        disabled={!isConnected}
+                        className="w-full rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold hover:bg-[#f1ff8a] disabled:opacity-50"
                       >
                         Continue
                       </Button>
@@ -459,98 +406,9 @@ export default function OnboardingPage() {
                   </Card>
                 )}
 
-                {/* 3. eERC Registration */}
+                {/* 4. Stealth Address (shifted down) */}
+
                 {step === 3 && (
-                  <Card>
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-white/90 text-[#0a0b0e] flex items-center justify-center">
-                        <Shield className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-white font-semibold">eERC Protocol Registration</div>
-                        <div className="text-white/70 text-sm mt-1">
-                          Register with the eERC protocol to enable private token operations. This creates your cryptographic identity on the blockchain.
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-6 space-y-4">
-                      {!isConnected ? (
-                        <div className="text-center py-8">
-                          <Wallet className="w-12 h-12 text-white/40 mx-auto mb-4" />
-                          <div className="text-white/60 text-sm">Please connect your wallet to continue</div>
-                        </div>
-                      ) : registrationStep === 'register' ? (
-                        <div className="space-y-4">
-                          <div className="text-white/80 text-sm">
-                            Register with the eERC protocol for private token operations
-                          </div>
-                          <div className="text-xs text-white/60 bg-white/10 p-3 rounded-lg">
-                            Your wallet is already connected and ready for private operations. 
-                            Click below to complete the registration process.
-                          </div>
-                          <Button
-                            onClick={handleRegister}
-                            disabled={isRegistering}
-                            className="w-full rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold hover:bg-[#f1ff8a] disabled:opacity-60"
-                          >
-                            {isRegistering ? (
-                              <>
-                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                                Registering...
-                              </>
-                            ) : (
-                              <>
-                                <Shield className="w-4 h-4 mr-2" />
-                                Register with eERC
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      ) : registrationStep === 'complete' ? (
-                        <div className="text-center py-4">
-                          <CheckCircle2 className="w-12 h-12 text-emerald-300 mx-auto mb-4" />
-                          <div className="text-white font-semibold mb-2">Registration Complete!</div>
-                          <div className="text-white/70 text-sm">
-                            Your cryptographic identity is now registered with the eERC protocol.
-                          </div>
-                        </div>
-                      ) : null}
-
-                      {registrationError && (
-                        <div className="text-xs text-rose-200 bg-rose-500/15 border border-rose-500/40 px-3 py-2 rounded-lg">
-                          <div className="flex items-center gap-2 mb-2">
-                            <AlertTriangle className="w-4 h-4" /> {registrationError}
-                          </div>
-                          {registrationError.includes('not initialized') && (
-                            <button
-                              onClick={() => {
-                                setRegistrationError(null)
-                                setRetryCount(0)
-                                handleRegister()
-                              }}
-                              className="text-xs text-rose-200 hover:text-rose-100 underline"
-                            >
-                              Retry
-                            </button>
-                          )}
-                        </div>
-                      )}
-
-                      {registrationStep === 'complete' && (
-                        <Button
-                          onClick={next}
-                          className="w-full rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-[#f1ff8a] hover:text-[#0a0b0e] hover:border-transparent"
-                        >
-                          Continue
-                        </Button>
-                      )}
-                    </div>
-                  </Card>
-                )}
-
-                {/* 4. Stealth Address */}
-                {step === 4 && (
                   <Card>
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 rounded-lg bg-white/90 text-[#0a0b0e] flex items-center justify-center">
@@ -611,7 +469,7 @@ export default function OnboardingPage() {
                 )}
 
                 {/* 5. Compliance Preference */}
-                {step === 5 && (
+                {step === 4 && (
                   <Card>
                     <div className="flex items-start justify-between">
                       <div>
@@ -668,7 +526,7 @@ export default function OnboardingPage() {
                 )}
 
                 {/* 6. Feature Highlights */}
-                {step === 6 && (
+                {step === 5 && (
                   <Card>
                     <div className="text-white/90 text-base font-semibold mb-3">Feature Highlights</div>
                     <div className="grid sm:grid-cols-3 gap-3">
@@ -691,7 +549,7 @@ export default function OnboardingPage() {
                 )}
 
                 {/* 7. Finish */}
-                {step === 7 && (
+                {step === 6 && (
                   <Card>
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 rounded-full bg-[#e6ff55] text-[#0a0b0e] flex items-center justify-center">

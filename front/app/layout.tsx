@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import "../components/liquid-ether.css"
+import "@rainbow-me/rainbowkit/styles.css"
 import Navbar from "../components/navbar"
 import LiquidEther from "../components/liquid-ether"
 import { Web3Provider } from "../providers/Web3Provider"
@@ -12,7 +13,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 export const metadata: Metadata = {
   title: "tZunami - Private. Compliant. DeFi-native.",
   description: "Your tokens, your privacy. Built on Uniswap v4 + zkSNARKs.",
-    generator: 'v0.app'
+  generator: 'v0.app'
 }
 
 export default function RootLayout({

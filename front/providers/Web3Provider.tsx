@@ -6,6 +6,7 @@ import { avalancheFuji } from "wagmi/chains"
 import { privateKeyToAccount } from "viem/accounts"
 import { createPublicClient, createWalletClient, custom } from "viem"
 import { ReactNode, useState } from "react"
+import { RainbowKitProvider } from "@rainbow-me/rainbowkit"
 import { NETWORK_CONFIG } from "@/config/contracts"
 
 // Use Avalanche Fuji testnet directly
@@ -30,7 +31,7 @@ const walletClient = createWalletClient({
   transport: custom(publicClient)
 })
 
-// Configure wagmi with direct wallet connection
+// Configure wagmi with direct wallet connection (original setup)
 const config = createConfig({
   chains: [avalancheChain],
   connectors: [], // No connectors needed - using direct wallet
@@ -49,7 +50,9 @@ export function Web3Provider({ children }: Web3ProviderProps) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        {children}
+        <RainbowKitProvider>
+          {children}
+        </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
   )
