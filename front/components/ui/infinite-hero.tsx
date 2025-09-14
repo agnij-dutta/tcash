@@ -6,6 +6,7 @@ import { gsap } from "gsap";
 import { SplitText } from "gsap/SplitText";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
+import { useRouter } from "next/navigation";
 
 gsap.registerPlugin(SplitText);
 
@@ -221,6 +222,7 @@ function ShaderBackground({
 }
 
 export default function InfiniteHero() {
+	const router = useRouter();
 	const rootRef = useRef<HTMLDivElement>(null);
 	const bgRef = useRef<HTMLDivElement>(null);
 	const h1Ref = useRef<HTMLHeadingElement>(null);
@@ -298,15 +300,13 @@ export default function InfiniteHero() {
 						ref={h1Ref}
 						className="mx-auto max-w-2xl lg:max-w-4xl text-[clamp(2.25rem,6vw,4rem)] font-extralight leading-[0.95] tracking-tight"
 					>
-						The road dissolves in light, the horizon remains unseen.
+						Privacy you control, <br />compliance they trust.
 					</h1>
 					<p
 						ref={pRef}
 						className="mx-auto mt-4 max-w-2xl md:text-balance text-sm/6 md:text-base/7 font-light tracking-tight text-white/70"
 					>
-						Minimal structures fade into a vast horizon where presence and
-						absence merge. A quiet tension invites the eye to wander without
-						end.
+						Tsunami is a private wallet that shields your balances and swaps from public view while keeping every transaction compliant by design.
 					</p>
 
 					<div
@@ -316,16 +316,14 @@ export default function InfiniteHero() {
 						<button
 							type="button"
 							className="group relative overflow-hidden border border-white/30 bg-gradient-to-r from-white/20 to-white/10 px-4 py-2 text-sm rounded-lg font-medium tracking-wide text-white backdrop-blur-sm transition-[border-color,background-color,box-shadow] duration-500 hover:border-white/50 hover:bg-white/20 hover:shadow-lg hover:shadow-white/10 cursor-pointer"
+							onClick={() => {
+								router.push("/onboarding")	
+							}}
 						>
-							Learn more
+							Get Started
 						</button>
 
-						<button
-							type="button"
-							className="group relative px-4 py-2 text-sm font-medium tracking-wide text-white/90 transition-[filter,color] duration-500 hover:drop-shadow-[0_0_6px_rgba(255,255,255,0.6)] hover:text-white cursor-pointer"
-						>
-							View portfolio
-						</button>
+		
 					</div>
 				</div>
 			</div>
