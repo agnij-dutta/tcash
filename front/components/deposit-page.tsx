@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useHardcodedWallet } from "@/hooks/useHardcodedWallet"
 import { useDirectEERC } from "@/hooks/useDirectEERC"
+import { useAVAXWrapper } from "@/hooks/useAVAXWrapper"
 import {
   Shield,
   Info,
@@ -35,7 +36,7 @@ const PUBLIC_TOKENS: PublicToken[] = [
   { symbol: "DAI", name: "DAI Stablecoin", priceUsd: 1, balance: 1840 },
 ]
 
-const FIXED_DENOMS = [1, 5, 10] // Test token amounts
+const FIXED_DENOMS = [0.1, 0.5, 1] // AVAX amounts
 
 export default function DepositPage() {
   const router = useRouter()
@@ -50,6 +51,16 @@ export default function DepositPage() {
     erc20Decimals,
     approve 
   } = useDirectEERC()
+  
+  const {
+    nativeAVAXBalance,
+    wrappedAVAXBalance,
+    nativeAVAXFormatted,
+    wrappedAVAXFormatted,
+    wrapAVAX,
+    unwrapAVAX,
+    refetchWAVAXBalance
+  } = useAVAXWrapper()
 
   // UI State
   const [showTokenModal, setShowTokenModal] = useState(false)
@@ -58,14 +69,24 @@ export default function DepositPage() {
   // Create dynamic token list with real balance data
   const availableTokens = useMemo(() => [
     { 
+      symbol: "AVAX", 
+      name: "Avalanche", 
+      priceUsd: 25, 
+      balance: parseFloat(nativeAVAXFormatted) 
+    },
+    { 
+      symbol: "WAVAX", 
+      name: "Wrapped AVAX", 
+      priceUsd: 25, 
+      balance: parseFloat(wrappedAVAXFormatted) 
+    },
+    { 
       symbol: erc20Symbol || "TEST", 
       name: "Test Token", 
       priceUsd: 1, 
       balance: parseFloat(erc20Balance || "0") / Math.pow(10, erc20Decimals || 18) 
     },
-    { symbol: "USDC", name: "USD Coin", priceUsd: 1, balance: 0 },
-    { symbol: "DAI", name: "DAI Stablecoin", priceUsd: 1, balance: 0 },
-  ], [erc20Balance, erc20Decimals, erc20Symbol])
+  ], [nativeAVAXFormatted, wrappedAVAXFormatted, erc20Balance, erc20Decimals, erc20Symbol])
   
   const [selectedToken, setSelectedToken] = useState<PublicToken>(availableTokens[0])
 
@@ -130,18 +151,35 @@ export default function DepositPage() {
       setIsDepositing(true)
       setConfirming("approve")
       
-      // Convert amount to wei using the correct decimals for the ERC20 token
-      const amountInWei = BigInt(Math.floor(numericAmount * Math.pow(10, erc20Decimals || 18)))
+      // Convert amount to wei
+      const amountInWei = BigInt(Math.floor(numericAmount * Math.pow(10, 18)))
       
-      // First approve the eERC contract to spend tokens
-      console.log("Approving tokens for eERC contract...")
-      await approve()
+      let depositResult
       
-      setConfirming("lock")
-      
-      // Then deposit the tokens
-      console.log("Depositing tokens to eERC...")
-      const result = await deposit(amountInWei.toString())
+      if (selectedToken.symbol === "AVAX") {
+        // For native AVAX, first wrap it to WAVAX
+        console.log("Wrapping native AVAX to WAVAX...")
+        await wrapAVAX(amountInWei.toString())
+        
+        // Then deposit the wrapped AVAX
+        console.log("Depositing wrapped AVAX to eERC...")
+        depositResult = await deposit(amountInWei.toString())
+        
+      } else if (selectedToken.symbol === "WAVAX") {
+        // For wrapped AVAX, deposit directly
+        console.log("Depositing wrapped AVAX to eERC...")
+        depositResult = await deposit(amountInWei.toString())
+        
+      } else {
+        // For other ERC20 tokens, approve first then deposit
+        console.log("Approving tokens for eERC contract...")
+        await approve()
+        
+        setConfirming("lock")
+        
+        console.log("Depositing tokens to eERC...")
+        depositResult = await deposit(amountInWei.toString())
+      }
       
       // Update recent transactions
       setRecent((prev) => [
@@ -152,8 +190,9 @@ export default function DepositPage() {
         ...prev.slice(0, 4),
       ])
       
-      // Refresh balance
+      // Refresh balances
       await refetchBalance()
+      await refetchWAVAXBalance()
       
       setConfirming(false)
       setSuccessOpen(true)
@@ -395,7 +434,7 @@ export default function DepositPage() {
                   >
                     <div className="text-white text-base font-semibold mb-2">Privacy Settings</div>
                     <div className="text-sm text-white">
-                      Currently only fixed deposit sizes (1, 5, 10 {selectedToken.symbol}).
+                      Currently only fixed deposit sizes (0.1, 0.5, 1 {selectedToken.symbol}).
                     </div>
 
                     <div className="mt-4 grid grid-cols-3 gap-2">
