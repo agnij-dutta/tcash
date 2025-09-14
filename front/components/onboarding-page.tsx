@@ -709,7 +709,7 @@ export default function OnboardingPage() {
                     </div>
                     <div className="mt-4 grid sm:grid-cols-2 gap-3">
                       <Button
-                        onClick={() => router.push("/dash")}
+                        onClick={() => router.push("/dashboard")}
                         className="h-12 w-full rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold hover:brightness-110 inline-flex items-center justify-center gap-2"
                       >
                         Go to Dashboard
@@ -769,7 +769,7 @@ export default function OnboardingPage() {
               <Button
                 onClick={() => {
                   setFinishing(false)
-                  router.push("/dash")
+                  router.push("/dashboard")
                 }}
                 className="rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold"
               >
