@@ -1,0 +1,30 @@
+{
+  "tokens": {
+    "0xA0b86a33E6441b8c4C8C0d1B4C8C0d1B4C8C0d1B": {
+      "name": "USDC",
+      "symbol": "USDC",
+      "decimals": 6,
+      "priceFeed": "0x0000000000000000000000000000000000000000",
+      "usdThreshold1e18": "1000000000000000000000",
+      "description": "USD Coin - $1000 threshold"
+    },
+    "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7": {
+      "name": "Wrapped AVAX",
+      "symbol": "WAVAX",
+      "decimals": 18,
+      "priceFeed": "0x0000000000000000000000000000000000000000",
+      "usdThreshold1e18": "5000000000000000000000",
+      "description": "Wrapped AVAX - $5000 threshold"
+    },
+    "0x0000000000000000000000000000000000000000": {
+      "name": "Ethereum",
+      "symbol": "ETH",
+      "decimals": 18,
+      "priceFeed": "0x0000000000000000000000000000000000000000",
+      "usdThreshold1e18": "10000000000000000000000",
+      "description": "Ethereum - $10000 threshold"
+    }
+  },
+  "defaultThreshold": "1000000000000000000000",
+  "description": "Compliance configuration for Tsunami EERC integration. Thresholds are in USD (1e18 wei). Price feeds should be Chainlink aggregator addresses."
+}
