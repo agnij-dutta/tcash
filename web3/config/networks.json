@@ -33,6 +33,19 @@
       "x": "0xa8b2d1acbd7dbd138d3114972d3c5b34c104a6b073aace27f328890d8c8195d1",
       "y": "0x0000000000000000000000000000000000000000000000000000000000000000"
     },
+    "uniswapV3": {
+      "factory": "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+      "quoter": "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6",
+      "wavax": "0xd00ae08403B9bbb9124bB305C09058E32C39A48c",
+      "supportedPools": {
+        "USDC_WAVAX_3000": {
+          "token0": "0x5425890298aed601595a70AB815c96711a31Bc65",
+          "token1": "0xd00ae08403B9bbb9124bB305C09058E32C39A48c",
+          "fee": 3000,
+          "description": "USDC/WAVAX 0.3%"
+        }
+      }
+    },
     "rpcUrl": "https://api.avax-test.network/ext/bc/C/rpc",
     "explorerUrl": "https://testnet.snowtrace.io"
   },

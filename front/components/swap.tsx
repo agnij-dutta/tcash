@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { useAccount } from "wagmi"
 import { useEERC } from "@/hooks/useEERC"
 import { useEncryptedBalance } from "@/hooks/useEncryptedBalance"
+import { useV3Swap, FUJI_TOKENS, POOL_FEES } from "@/hooks/useV3Swap"
 import {
   ArrowUpDown,
   ChevronDown,
@@ -24,10 +25,20 @@ export default function TsunamiSwap() {
 
   const tokenList = useMemo(
     () => [
-      { symbol: "eUSDC", name: "Encrypted USD Coin", balance: balanceInTokens },
-      { symbol: "eDAI", name: "Encrypted DAI", balance: 0 },
-      { symbol: "eETH", name: "Encrypted ETH", balance: 0 },
-      { symbol: "eUSDT", name: "Encrypted Tether", balance: 0 },
+      {
+        symbol: "eUSDC",
+        name: "Encrypted USD Coin",
+        balance: balanceInTokens,
+        address: FUJI_TOKENS.USDC.address,
+        decimals: FUJI_TOKENS.USDC.decimals
+      },
+      {
+        symbol: "eWAVAX",
+        name: "Encrypted Wrapped AVAX",
+        balance: 0,
+        address: FUJI_TOKENS.WAVAX.address,
+        decimals: FUJI_TOKENS.WAVAX.decimals
+      },
     ],
     [balanceInTokens],
   )
@@ -35,7 +46,6 @@ export default function TsunamiSwap() {
   const [fromToken, setFromToken] = useState(tokenList[0])
   const [toToken, setToToken] = useState(tokenList[1])
   const [fromAmount, setFromAmount] = useState<string>("")
-  const [toAmount, setToAmount] = useState<string>("")
   const [insufficientBalance, setInsufficientBalance] = useState(false)
   const [selectingSide, setSelectingSide] = useState<"from" | "to" | null>(null)
   const [tokenQuery, setTokenQuery] = useState("")
@@ -45,24 +55,46 @@ export default function TsunamiSwap() {
   const [successOpen, setSuccessOpen] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [toasts, setToasts] = useState<{ id: number; message: string }[]>([])
+  const [selectedFee, setSelectedFee] = useState(POOL_FEES.MEDIUM)
 
-  const price = useMemo(() => {
-    if (fromToken.symbol === "eUSDC" && toToken.symbol === "eDAI") return 0.99
-    if (fromToken.symbol === "eDAI" && toToken.symbol === "eUSDC") return 1 / 0.99
-    return 1
-  }, [fromToken, toToken])
+  // Initialize V3 swap hook
+  const {
+    quote: v3Quote,
+    minAmountOut,
+    priceImpact,
+    poolExists,
+    isLoading: isV3Loading,
+    error: v3Error,
+    executePrivateSwap,
+    refreshQuote,
+    txHash
+  } = useV3Swap({
+    tokenIn: fromToken?.address,
+    tokenOut: toToken?.address,
+    amountIn: fromAmount,
+    fee: selectedFee,
+    slippage
+  })
 
+  // Update UI when V3 quote changes
+  useEffect(() => {
+    if (v3Quote && parseFloat(v3Quote) > 0) {
+      const formattedQuote = parseFloat(v3Quote).toLocaleString(undefined, {
+        maximumFractionDigits: 6
+      })
+      // Set the quoted amount (we don't set toAmount directly to avoid conflicts)
+    }
+  }, [v3Quote])
+
+  // Check for insufficient balance
   useEffect(() => {
     const amt = Number.parseFloat(fromAmount.replace(/,/g, ""))
-    if (!isFinite(amt) || amt <= 0) {
-      setToAmount("")
+    if (isFinite(amt) && amt > 0) {
+      setInsufficientBalance(amt > fromToken.balance)
+    } else {
       setInsufficientBalance(false)
-      return
     }
-    const est = amt * price
-    setToAmount(est.toLocaleString(undefined, { maximumFractionDigits: 6 }))
-    setInsufficientBalance(amt > fromToken.balance)
-  }, [fromAmount, price, fromToken])
+  }, [fromAmount, fromToken])
 
   const filteredTokens = useMemo(() => {
     const q = tokenQuery.trim().toLowerCase()
@@ -87,7 +119,7 @@ export default function TsunamiSwap() {
   function flipDirection() {
     setFromToken(toToken)
     setToToken(fromToken)
-    setFromAmount(toAmount)
+    setFromAmount(v3Quote || "0")
   }
 
   function addToast(message: string) {
@@ -104,6 +136,11 @@ export default function TsunamiSwap() {
       return
     }
 
+    if (!poolExists) {
+      setErrorMessage("Pool does not exist for this token pair")
+      return
+    }
+
     setErrorMessage(null)
     const amt = Number.parseFloat(fromAmount.replace(/,/g, ""))
     if (!isFinite(amt) || amt <= 0) {
@@ -117,26 +154,27 @@ export default function TsunamiSwap() {
 
     try {
       setIsSwapping(true)
-      addToast("Generating zk proof...")
-      
-      // Convert amount to wei (assuming 18 decimals for now)
-      const amountInWei = BigInt(Math.floor(amt * Math.pow(10, 18)))
-      
-      // For now, we'll simulate a transfer to the same address (self-transfer)
-      // In a real implementation, this would be a proper swap through Uniswap
-      const result = await privateTransfer(address!, amountInWei, `Swapped ${amt} ${fromToken.symbol} to ${toToken.symbol}`)
-      
-      addToast("Proof generated successfully")
-      addToast("Transaction submitted to PrivacyRouter")
-      
+      addToast("Initializing private swap...")
+
+      // Execute the V3 private swap
+      addToast("Generating ZK proof for spend...")
+      await executePrivateSwap(address!, slippage)
+
+      addToast("Swap executed successfully!")
+      addToast("Tokens deposited to encrypted balance")
+
       // Refresh balance
       await refetchBalance()
-      
+
       setIsSwapping(false)
       setSuccessOpen(true)
+
+      // Reset form
+      setFromAmount("")
     } catch (e) {
       setIsSwapping(false)
-      setErrorMessage("Swap failed: Insufficient liquidity")
+      const errorMsg = e instanceof Error ? e.message : "Swap failed"
+      setErrorMessage(`Swap failed: ${errorMsg}`)
     }
   }
 
@@ -309,8 +347,23 @@ export default function TsunamiSwap() {
                     </div>
                     <div className="text-center">
                       <div className="text-[44px] sm:text-[48px] leading-[1.1] font-bold text-white tracking-tight">
-                        {toAmount || "0.0"}
+                        {v3Quote && parseFloat(v3Quote) > 0
+                          ? parseFloat(v3Quote).toLocaleString(undefined, { maximumFractionDigits: 6 })
+                          : "0.0"
+                        }
                       </div>
+                      {poolExists && v3Quote && (
+                        <div className="text-sm text-green-400 mt-1 flex items-center justify-center gap-1">
+                          <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
+                          Live Uniswap V3 Price
+                        </div>
+                      )}
+                      {!poolExists && (
+                        <div className="text-sm text-yellow-400 mt-1 flex items-center justify-center gap-1">
+                          <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full"></div>
+                          Pool not found
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -344,9 +397,9 @@ export default function TsunamiSwap() {
                     {detailsOpen ? "Hide" : "Show"} details
                   </button>
                   {detailsOpen && (
-                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-base text-white/80">
+                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-base text-white/80">
                       <div
-                        className="backdrop-blur-xl border border-white/15 rounded-xl p-5 mb-4"
+                        className="backdrop-blur-xl border border-white/15 rounded-xl p-4"
                         style={{ background: "rgba(255,255,255,0.02)" }}
                       >
                         <div className="flex items-center justify-between">
@@ -354,36 +407,86 @@ export default function TsunamiSwap() {
                           <select
                             value={slippage}
                             onChange={(e) => setSlippage(Number.parseFloat(e.target.value))}
-                            className="bg-[#20232c] border border-white/10 rounded-md px-3 py-2 text-white font-medium"
+                            className="bg-[#20232c] border border-white/10 rounded-md px-2 py-1 text-sm text-white font-medium"
                           >
                             <option value={0.1}>0.1%</option>
                             <option value={0.5}>0.5%</option>
                             <option value={1}>1%</option>
+                            <option value={2}>2%</option>
                           </select>
                         </div>
                       </div>
+
                       <div
                         className="backdrop-blur-xl border border-white/15 rounded-xl p-4"
                         style={{ background: "rgba(255,255,255,0.018)" }}
                       >
-                        <div className="font-medium">
-                          Expected rate: 1 {fromToken.symbol} ≈ {price.toFixed(4)} {toToken.symbol}
+                        <div className="font-semibold mb-1">Pool Fee</div>
+                        <select
+                          value={selectedFee}
+                          onChange={(e) => setSelectedFee(Number.parseInt(e.target.value))}
+                          className="bg-[#20232c] border border-white/10 rounded-md px-2 py-1 text-sm text-white font-medium w-full"
+                        >
+                          <option value={POOL_FEES.LOW}>0.05% (Low)</option>
+                          <option value={POOL_FEES.MEDIUM}>0.3% (Medium)</option>
+                          <option value={POOL_FEES.HIGH}>1% (High)</option>
+                        </select>
+                      </div>
+
+                      <div
+                        className="backdrop-blur-xl border border-white/15 rounded-xl p-4"
+                        style={{ background: "rgba(255,255,255,0.018)" }}
+                      >
+                        <div className="font-semibold mb-1">Minimum Received</div>
+                        <div className="text-sm">
+                          {minAmountOut} {toToken.symbol}
                         </div>
                       </div>
+
+                      {priceImpact > 0 && (
+                        <div
+                          className={`backdrop-blur-xl border rounded-xl p-4 ${
+                            priceImpact > 5 ? 'border-red-500/30 bg-red-500/10' :
+                            priceImpact > 1 ? 'border-yellow-500/30 bg-yellow-500/10' :
+                            'border-green-500/30 bg-green-500/10'
+                          }`}
+                        >
+                          <div className="font-semibold mb-1">Price Impact</div>
+                          <div className={`text-sm font-medium ${
+                            priceImpact > 5 ? 'text-red-400' :
+                            priceImpact > 1 ? 'text-yellow-400' :
+                            'text-green-400'
+                          }`}>
+                            {priceImpact.toFixed(2)}%
+                          </div>
+                        </div>
+                      )}
+
                       <div
                         className="backdrop-blur-xl border border-white/15 rounded-xl p-4"
                         style={{ background: "rgba(255,255,255,0.018)" }}
                       >
-                        <div className="font-medium">Tsunami fee: 0.10%</div>
-                        <div className="font-medium">Uniswap LP fee: 0.30%</div>
+                        <div className="font-semibold mb-1">Route</div>
+                        <div className="text-xs text-white/60">
+                          {fromToken.symbol} → {toToken.symbol}
+                        </div>
+                        <div className="text-xs text-blue-400 mt-1">
+                          Via Uniswap V3
+                        </div>
                       </div>
+
                       <div
-                        className="sm:col-span-3 backdrop-blur-xl border border-white/15 rounded-xl p-4 text-white/80"
+                        className="sm:col-span-2 lg:col-span-3 backdrop-blur-xl border border-white/15 rounded-xl p-4 text-white/80"
                         style={{ background: "rgba(255,255,255,0.015)" }}
                       >
-                        <span className="font-medium">
-                          This swap is shielded with zk-proofs. Your wallet generates proofs automatically.
+                        <span className="font-medium text-sm">
+                          🔒 This swap is completely private using zero-knowledge proofs. Your transaction history and balances remain encrypted on-chain.
                         </span>
+                        {!poolExists && (
+                          <div className="mt-2 text-yellow-400 text-xs">
+                            ⚠️ Pool not found for selected fee tier. Try a different fee tier or token pair.
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -393,10 +496,25 @@ export default function TsunamiSwap() {
               <div className="md:ml-auto">
                 <button
                   onClick={onSwap}
-                  disabled={isSwapping}
-                  className="h-14 px-8 sm:px-10 bg-purple-500 hover:bg-purple-600 text-white font-bold text-base sm:text-lg rounded-full transition-all duration-200 shadow-[0_10px_30px_rgba(139,92,246,0.3)] disabled:opacity-60 disabled:cursor-not-allowed hover:scale-105"
+                  disabled={isSwapping || !poolExists || isV3Loading || insufficientBalance}
+                  className={`h-14 px-8 sm:px-10 font-bold text-base sm:text-lg rounded-full transition-all duration-200 shadow-[0_10px_30px_rgba(139,92,246,0.3)] disabled:opacity-60 disabled:cursor-not-allowed hover:scale-105 ${
+                    !poolExists
+                      ? 'bg-gray-500 hover:bg-gray-600'
+                      : insufficientBalance
+                      ? 'bg-red-500 hover:bg-red-600'
+                      : 'bg-purple-500 hover:bg-purple-600'
+                  } text-white`}
                 >
-                  {isSwapping ? "Generating zk proof..." : "Swap Privately"}
+                  {isSwapping
+                    ? "Executing Private Swap..."
+                    : isV3Loading
+                    ? "Loading V3 Quote..."
+                    : !poolExists
+                    ? "Pool Not Found"
+                    : insufficientBalance
+                    ? "Insufficient Balance"
+                    : "Swap Privately via V3"
+                  }
                 </button>
               </div>
             </div>
@@ -469,8 +587,13 @@ export default function TsunamiSwap() {
                   From: {fromAmount || "0.0"} {fromToken.symbol}
                 </div>
                 <div className="font-medium text-base">
-                  To: {toAmount || "0.0"} {toToken.symbol}
+                  To: {v3Quote || "0.0"} {toToken.symbol}
                 </div>
+                {txHash && (
+                  <div className="text-sm text-blue-400 mt-2">
+                    Transaction: {txHash.slice(0, 6)}...{txHash.slice(-4)}
+                  </div>
+                )}
               </div>
               <div className="flex items-center justify-center gap-4">
                 <button
