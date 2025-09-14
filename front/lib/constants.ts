@@ -60,17 +60,40 @@ export const ERC20_ABI = [
   }
 ] as const;
 
-// eERC Converter ABI (simplified)
+// eERC Converter ABI (matches the actual contract interface)
 export const EERC_CONVERTER_ABI = [
   {
-    "inputs": [{"name": "amount", "type": "uint256"}],
+    "inputs": [
+      {"name": "amount", "type": "uint256"},
+      {"name": "tokenAddress", "type": "address"},
+      {"name": "amountPCT", "type": "uint256[7]"}
+    ],
     "name": "deposit",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [{"name": "amount", "type": "uint256"}],
+    "inputs": [
+      {"name": "tokenId", "type": "uint256"},
+      {
+        "components": [
+          {
+            "components": [
+              {"name": "a", "type": "uint256[2]"},
+              {"name": "b", "type": "uint256[2][2]"},
+              {"name": "c", "type": "uint256[2]"}
+            ],
+            "name": "proofPoints",
+            "type": "tuple"
+          },
+          {"name": "publicSignals", "type": "uint256[16]"}
+        ],
+        "name": "proof",
+        "type": "tuple"
+      },
+      {"name": "balancePCT", "type": "uint256[7]"}
+    ],
     "name": "withdraw",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -94,6 +117,50 @@ export const EERC_CONVERTER_ABI = [
     "inputs": [],
     "name": "auditorPublicKey",
     "outputs": [{"name": "", "type": "uint256[2]"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"name": "tokenAddress", "type": "address"}],
+    "name": "tokenIds",
+    "outputs": [{"name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"name": "user", "type": "address"},
+      {"name": "tokenId", "type": "uint256"}
+    ],
+    "name": "balanceOf",
+    "outputs": [
+      {
+        "components": [
+          {
+            "components": [
+              {"name": "x", "type": "uint256"},
+              {"name": "y", "type": "uint256"}
+            ],
+            "name": "c1",
+            "type": "tuple"
+          },
+          {
+            "components": [
+              {"name": "x", "type": "uint256"},
+              {"name": "y", "type": "uint256"}
+            ],
+            "name": "c2",
+            "type": "tuple"
+          }
+        ],
+        "name": "eGCT",
+        "type": "tuple"
+      },
+      {"name": "nonce", "type": "uint256"},
+      {"name": "amountPCTs", "type": "tuple[]"},
+      {"name": "balancePCT", "type": "uint256[7]"},
+      {"name": "transactionIndex", "type": "uint256"}
+    ],
     "stateMutability": "view",
     "type": "function"
   }

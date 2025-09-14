@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Progress } from "@/components/ui/progress"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { CONTRACT_ADDRESSES } from "@/config/contracts"
 
 type PublicToken = {
   symbol: string
@@ -161,14 +162,14 @@ export default function DepositPage() {
         console.log("Wrapping native AVAX to WAVAX...")
         await wrapAVAX(amountInWei.toString())
         
-        // Then deposit the wrapped AVAX
+        // Then deposit the wrapped AVAX using the wrapper contract address
         console.log("Depositing wrapped AVAX to eERC...")
-        depositResult = await deposit(amountInWei.toString())
+        depositResult = await deposit(amountInWei.toString(), "0x0000000000000000000000000000000000000000") // Will be updated with actual wrapper address
         
       } else if (selectedToken.symbol === "WAVAX") {
-        // For wrapped AVAX, deposit directly
+        // For wrapped AVAX, deposit directly using wrapper contract address
         console.log("Depositing wrapped AVAX to eERC...")
-        depositResult = await deposit(amountInWei.toString())
+        depositResult = await deposit(amountInWei.toString(), "0x0000000000000000000000000000000000000000") // Will be updated with actual wrapper address
         
       } else {
         // For other ERC20 tokens, approve first then deposit
@@ -178,7 +179,7 @@ export default function DepositPage() {
         setConfirming("lock")
         
         console.log("Depositing tokens to eERC...")
-        depositResult = await deposit(amountInWei.toString())
+        depositResult = await deposit(amountInWei.toString(), CONTRACT_ADDRESSES.erc20)
       }
       
       // Update recent transactions

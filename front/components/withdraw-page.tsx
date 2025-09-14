@@ -31,7 +31,7 @@ type Token = {
 export default function WithdrawPage() {
   const router = useRouter()
   const { address, isConnected } = useHardcodedWallet()
-  const { isInitialized, isRegistered, balanceInTokens, withdraw, refetchBalance } = useDirectEERC()
+  const { isInitialized, isRegistered, balanceInTokens, withdraw, refetchBalance, erc20Symbol } = useDirectEERC()
 
   // Real tokens with actual balance
   const tokens = useMemo<Token[]>(
@@ -127,7 +127,7 @@ export default function WithdrawPage() {
       setConfirming("execute")
       
       // Call the real eERC withdraw function
-      const result = await withdraw(amountInWei, `Withdrew ${numericAmount} ${selectedToken.symbol}`)
+      const result = await withdraw(amountInWei.toString())
       
       // Refresh balance
       await refetchBalance()
