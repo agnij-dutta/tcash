@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useHardcodedWallet } from "@/hooks/useHardcodedWallet"
-import { useDirectEERC } from "@/hooks/useDirectEERC"
+import { useEERC } from "@/hooks/useEERC"
 import {
   ChevronDown,
   Info,
@@ -31,7 +31,10 @@ type Token = {
 export default function WithdrawPage() {
   const router = useRouter()
   const { address, isConnected } = useHardcodedWallet()
-  const { isInitialized, isRegistered, balanceInTokens, withdraw, refetchBalance, erc20Symbol } = useDirectEERC()
+  const { isInitialized, isRegistered, decryptedBalance, erc20Decimals, withdraw, refetchBalance, erc20Symbol } = useEERC()
+  
+  // Convert decrypted balance to display format
+  const balanceInTokens = parseFloat((Number(decryptedBalance) / Math.pow(10, erc20Decimals || 18)).toFixed(6))
 
   // Real tokens with actual balance
   const tokens = useMemo<Token[]>(

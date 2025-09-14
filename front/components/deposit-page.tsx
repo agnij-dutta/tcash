@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useHardcodedWallet } from "@/hooks/useHardcodedWallet"
-import { useDirectEERC } from "@/hooks/useDirectEERC"
+import { useEERC } from "@/hooks/useEERC"
+import { useWriteContract } from "wagmi"
 import { useAVAXWrapper } from "@/hooks/useAVAXWrapper"
 import {
   Shield,
@@ -37,7 +38,6 @@ const PUBLIC_TOKENS: PublicToken[] = [
   { symbol: "DAI", name: "DAI Stablecoin", priceUsd: 1, balance: 1840 },
 ]
 
-const FIXED_DENOMS = [0.1, 0.5, 1] // AVAX amounts
 
 export default function DepositPage() {
   const router = useRouter()
@@ -45,13 +45,44 @@ export default function DepositPage() {
   const { 
     isInitialized, 
     isRegistered, 
+    register,
     deposit, 
     refetchBalance, 
     erc20Balance, 
     erc20Symbol, 
-    erc20Decimals,
-    approve 
-  } = useDirectEERC()
+    erc20Decimals
+  } = useEERC()
+  
+  // Separate approve function using writeContract
+  const { writeContractAsync } = useWriteContract()
+  const approve = async () => {
+    if (!address) throw new Error("No wallet connected")
+    
+    try {
+      const txHash = await writeContractAsync({
+        abi: [{
+          "inputs": [
+            {"name": "spender", "type": "address"},
+            {"name": "amount", "type": "uint256"}
+          ],
+          "name": "approve",
+          "outputs": [{"name": "", "type": "bool"}],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }],
+        functionName: "approve",
+        args: [CONTRACT_ADDRESSES.eERC, BigInt("115792089237316195423570985008687907853269984665640564039457584007913129639935")],
+        address: CONTRACT_ADDRESSES.erc20,
+        account: address as `0x${string}`,
+      })
+      
+      console.log("Approve transaction:", txHash)
+      return { transactionHash: txHash }
+    } catch (error) {
+      console.error("Approve failed:", error)
+      throw error
+    }
+  }
   
   const {
     nativeAVAXBalance,
@@ -92,11 +123,9 @@ export default function DepositPage() {
   const [selectedToken, setSelectedToken] = useState<PublicToken>(availableTokens[0])
 
   const [amount, setAmount] = useState<string>("")
-  const [denom, setDenom] = useState<number | "">("")
-  const [showVariableFuture, setShowVariableFuture] = useState(false)
 
   const [generatingNote, setGeneratingNote] = useState(false)
-  const [noteReady, setNoteReady] = useState(false)
+  const [noteReady, setNoteReady] = useState(true) // Auto-ready for simpler UX
 
   const [confirming, setConfirming] = useState<false | "approve" | "lock">(false)
   const [successOpen, setSuccessOpen] = useState(false)
@@ -111,7 +140,7 @@ export default function DepositPage() {
   const numericAmount = useMemo(() => Number.parseFloat(amount.replace(/,/g, "")) || 0, [amount])
   const amountUsd = useMemo(() => numericAmount * selectedToken.priceUsd, [numericAmount, selectedToken])
   const insufficient = numericAmount > selectedToken.balance
-  const canConfirm = numericAmount > 0 && !insufficient && !!denom && noteReady
+  const canConfirm = numericAmount > 0 && !insufficient && noteReady
 
   const filteredTokens = useMemo(() => {
     const q = tokenQuery.trim().toLowerCase()
@@ -143,9 +172,21 @@ export default function DepositPage() {
   }
 
   async function onConfirmDeposit() {
-    if (!isConnected || !isRegistered) {
-      alert("Please connect your wallet and register with eERC first")
+    if (!isConnected) {
+      alert("Wallet not connected")
       return
+    }
+
+    // Auto-register if not already registered
+    if (!isRegistered) {
+      try {
+        console.log("Auto-registering with eERC...")
+        await register()
+        console.log("Registration successful")
+      } catch (error) {
+        console.error("Auto-registration failed:", error)
+        // Continue anyway - registration might have worked
+      }
     }
 
     try {
@@ -208,9 +249,7 @@ export default function DepositPage() {
   }
 
   const stealthAddress = "0xStealth...abcd"
-  const receiveLabel = denom
-    ? `Deposit ${denom} ${selectedToken.symbol} → Receive ${denom} e${selectedToken.symbol}`
-    : `Deposit ${selectedToken.symbol} → Receive e${selectedToken.symbol}`
+  const receiveLabel = `Deposit ${amount || '0'} ${selectedToken.symbol} → Receive ${amount || '0'} e${selectedToken.symbol}`
 
   return (
     <TooltipProvider>
@@ -290,7 +329,7 @@ export default function DepositPage() {
 
               {/* Grid content */}
               <div className="grid lg:grid-cols-3 gap-6 mt-6">
-                {/* Left: Token & Amount + Key Generation + Privacy Settings */}
+                {/* Left: Token & Amount + Key Generation */}
                 <div className="lg:col-span-2 space-y-6">
                   {/* Token & Amount */}
                   <section
@@ -428,46 +467,6 @@ export default function DepositPage() {
                     </div>
                   </section>
 
-                  {/* Privacy Settings */}
-                  <section
-                    className="rounded-2xl backdrop-blur-xl border border-white/15 p-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_10px_28px_rgba(0,0,0,0.45)]"
-                    style={{ background: "rgba(255,255,255,0.08)" }}
-                  >
-                    <div className="text-white text-base font-semibold mb-2">Privacy Settings</div>
-                    <div className="text-sm text-white">
-                      Currently only fixed deposit sizes (0.1, 0.5, 1 {selectedToken.symbol}).
-                    </div>
-
-                    <div className="mt-4 grid grid-cols-3 gap-2">
-                      {FIXED_DENOMS.map((d) => (
-                        <button
-                          key={d}
-                          onClick={() => setDenom(d)}
-                          className={`px-4 py-3 rounded-xl border transition ${
-                            denom === d
-                              ? "bg-white/15 border-white/25 text-white"
-                              : "bg-white/10 border-white/15 text-white hover:bg-white/15"
-                          }`}
-                        >
-                          {d.toLocaleString()} {selectedToken.symbol}
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="mt-4">
-                      <button
-                        onClick={() => setShowVariableFuture((s) => !s)}
-                        className="text-xs px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/15 text-white border border-white/15"
-                      >
-                        Future: variable deposits (preview)
-                      </button>
-                      {showVariableFuture && (
-                        <div className="mt-2 text-xs text-white">
-                          Variable deposits will be enabled in a future update.
-                        </div>
-                      )}
-                    </div>
-                  </section>
                 </div>
 
                 {/* Right: Transaction Summary + CTA */}
