@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { WagmiProvider, createConfig, http } from "wagmi"
+import { injected } from "wagmi/connectors"
 import { avalancheFuji } from "wagmi/chains"
 import { privateKeyToAccount } from "viem/accounts"
 import { createPublicClient, createWalletClient, custom } from "viem"
@@ -31,10 +32,10 @@ const walletClient = createWalletClient({
   transport: custom(publicClient)
 })
 
-// Configure wagmi with direct wallet connection (original setup)
+// Configure wagmi with direct wallet connection (original setup) + injected connector for RainbowKit
 const config = createConfig({
   chains: [avalancheChain],
-  connectors: [], // No connectors needed - using direct wallet
+  connectors: [injected()],
   transports: {
     [avalancheChain.id]: http(),
   },

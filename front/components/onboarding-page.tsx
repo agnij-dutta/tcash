@@ -2,32 +2,28 @@
 
 import type React from "react"
 
-import { useEffect, useMemo, useState } from "react"
-import { ConnectButton } from "@rainbow-me/rainbowkit"
+import { useEffect, useState } from "react"
+import { ConnectButton, useConnectModal } from "@rainbow-me/rainbowkit"
+import { useAccount } from "wagmi"
 import { useRouter } from "next/navigation"
 import { useEERC } from "@/hooks/useEERC"
-import { useHardcodedWallet } from "@/hooks/useHardcodedWallet"
+// Removed hardcoded wallet to rely on RainbowKit/wagmi connection state
 import {
   Shield,
   Wallet,
-  KeyRound,
   EyeOff,
   ChevronRight,
   ChevronLeft,
   Info,
   CheckCircle2,
-  AlertTriangle,
-  RefreshCw,
-  Loader2,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Progress } from "@/components/ui/progress"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 
-type Mode = "create" | "import"
+// Wallet creation/import removed; connection handled by RainbowKit / hardcoded wallet
 
 const FEATURE_CARDS = [
   { title: "Deposit Privately", desc: "Lock ERC-20s, mint eERCs" },
@@ -69,20 +65,11 @@ function generateSeed(words = 12) {
 
 export default function OnboardingPage() {
   const router = useRouter()
-  const { address, isConnected } = useHardcodedWallet()
+  const { address, isConnected } = useAccount()
   const { isInitialized, isRegistered, register, deposit, withdraw } = useEERC()
   const [step, setStep] = useState(0)
-  const [mode, setMode] = useState<Mode>("create")
-
-  // Create wallet state
-  const [seed, setSeed] = useState<string[]>([])
-  const [seedShown, setSeedShown] = useState(false)
-  const [confirmIdx, setConfirmIdx] = useState<number[]>([])
-  const [confirmWords, setConfirmWords] = useState<Record<number, string>>({})
-
-  // Import state
-  const [importInput, setImportInput] = useState("")
-  const [importError, setImportError] = useState<string | null>(null)
+  const { openConnectModal } = useConnectModal()
+  // Removed wallet creation/import states
 
   // Stealth address
   const [stealthAddress, setStealthAddress] = useState<string>("")
@@ -105,7 +92,6 @@ export default function OnboardingPage() {
 
   // Init defaults
   useEffect(() => {
-    if (seed.length === 0) setSeed(generateSeed(12))
     if (!stealthAddress) rotateStealth()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -153,7 +139,7 @@ export default function OnboardingPage() {
   }
 
   function next() {
-    setStep((s) => Math.min(6, s + 1))
+    setStep((s) => Math.min(5, s + 1))
   }
   function prev() {
     setStep((s) => Math.max(0, s - 1))
@@ -166,40 +152,7 @@ export default function OnboardingPage() {
     setStealthAddress(`0x${rand}...${rand.slice(-4)}`)
   }
 
-  // Choose 3 indices to confirm on key backup step
-  useEffect(() => {
-    if (step === 2 && confirmIdx.length === 0) {
-      const picks = new Set<number>()
-      while (picks.size < 3) picks.add(Math.floor(Math.random() * seed.length))
-      setConfirmIdx(Array.from(picks))
-    }
-  }, [step, seed.length, confirmIdx.length])
-
-  const confirmOk = useMemo(() => {
-    if (confirmIdx.length < 2) return false
-    return confirmIdx.every((i) => (confirmWords[i] || "").trim().toLowerCase() === seed[i])
-  }, [confirmIdx, confirmWords, seed])
-
-  function onImportValidate() {
-    const trimmed = importInput.trim()
-    if (!trimmed) {
-      setImportError("Enter your seed phrase (12/24 words) or a private key")
-      return false
-    }
-    const words = trimmed.split(/\s+/)
-    if (words.length === 1) {
-      const ok = /^0x?[0-9a-fA-F]{64}$/.test(words[0])
-      if (!ok) {
-        setImportError("Private key must be 64 hex characters")
-        return false
-      }
-    } else if (words.length !== 12 && words.length !== 24) {
-      setImportError("Seed phrase must be 12 or 24 words")
-      return false
-    }
-    setImportError(null)
-    return true
-  }
+  // Removed seed/import confirmation logic
 
   function startFinish() {
     setConfetti(true)
@@ -267,12 +220,12 @@ export default function OnboardingPage() {
                   </div>
                   <div className="text-sm font-light tracking-tight bg-gradient-to-b from-white via-zinc-300 to-zinc-500 bg-clip-text text-transparent">Tsunami Onboarding</div>
                 </div>
-                <div className="text-xs text-white/70">Step {step + 1} / 6</div>
+                <div className="text-xs text-white/70">Step {step + 1} / 5</div>
               </div>
 
               {/* Progress */}
               <div className="mt-4">
-                <Progress value={((step + 1) / 6) * 100} className="h-2 bg-white/10" />
+                <Progress value={((step + 1) / 5) * 100} className="h-2 bg-white/10" />
               </div>
 
               {/* Content */}
@@ -299,88 +252,9 @@ export default function OnboardingPage() {
                   </Card>
                 )}
 
-                {/* 2. Wallet Setup */}
-                {step === 1 && (
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <Card>
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-white/90 text-[#0a0b0e] flex items-center justify-center">
-                          <KeyRound className="w-5 h-5" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="text-white font-semibold">Create New Wallet</div>
-                          <div className="text-white/70 text-sm">
-                            Generates private key + stealth address. Auto-creates local encrypted store.
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mt-4 flex items-center justify-between">
-                        <Button
-                          onClick={() => {
-                            setMode("create")
-                            next()
-                          }}
-                          className="rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-[#f1ff8a] hover:text-[#0a0b0e] hover:border-transparent px-5"
-                        >
-                          Continue
-                        </Button>
-                        <span className="text-xs text-white/60">Default</span>
-                      </div>
-                    </Card>
-                    <Card>
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-white/90 text-[#0a0b0e] flex items-center justify-center">
-                          <Wallet className="w-5 h-5" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="text-white font-semibold">Import Existing Wallet</div>
-                          <div className="text-white/70 text-sm">
-                            Enter seed phrase / private key. Option to import from MetaMask/WalletConnect.
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mt-4 space-y-3">
-                        <Input
-                          value={importInput}
-                          onChange={(e) => setImportInput(e.target.value)}
-                          placeholder="Seed phrase (12/24 words) or 0x private key"
-                          className="bg-white/10 border-white/15 text-white placeholder:text-white/60"
-                        />
-                        {importError && (
-                          <div className="text-xs text-rose-200 bg-rose-500/15 border border-rose-500/40 px-3 py-2 rounded-lg flex items-center gap-2">
-                            <AlertTriangle className="w-4 h-4" /> {importError}
-                          </div>
-                        )}
-                        <div className="flex items-center gap-2">
-                          <Button
-                            onClick={() => {
-                              if (onImportValidate()) {
-                                setMode("import")
-                                next()
-                              }
-                            }}
-                            className="rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-[#f1ff8a] hover:text-[#0a0b0e] hover:border-transparent px-5"
-                          >
-                            Continue
-                          </Button>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button className="p-2 rounded-lg border border-white/10 bg-white/10 text-white/80 hover:bg-[#f1ff8a] hover:text-[#0a0b0e] hover:border-transparent">
-                                <Info className="w-5 h-5" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="bottom" className="border-white/15 text-white/85">
-                              MetaMask/WalletConnect import coming soon
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                      </div>
-                    </Card>
-                  </div>
-                )}
+                {/* 2. Connect Wallet (now Step 2) */}
 
-                {/* 3. Connect Wallet (replacing previous Step 2 and 3) */}
-                {step === 2 && (
+                {step === 1 && (
                   <Card>
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 rounded-lg bg-white/90 text-[#0a0b0e] flex items-center justify-center">
@@ -396,9 +270,14 @@ export default function OnboardingPage() {
                     </div>
                     <div className="mt-6">
                       <Button
-                        onClick={next}
-                        disabled={!isConnected}
-                        className="w-full rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold hover:bg-[#f1ff8a] disabled:opacity-50"
+                        onClick={() => {
+                          if (isConnected) {
+                            next()
+                          } else {
+                            openConnectModal?.()
+                          }
+                        }}
+                        className="w-full rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold hover:bg-[#f1ff8a]"
                       >
                         Continue
                       </Button>
@@ -408,54 +287,21 @@ export default function OnboardingPage() {
 
                 {/* 4. Stealth Address (shifted down) */}
 
-                {step === 3 && (
+                {step === 2 && (
                   <Card>
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 rounded-lg bg-white/90 text-[#0a0b0e] flex items-center justify-center">
                         <EyeOff className="w-5 h-5" />
                       </div>
                       <div className="flex-1">
-                        <div className="text-white font-semibold">Stealth Address Setup</div>
-                        <div className="text-white/70 text-sm">
-                          Your public address is hidden. We use stealth addresses to protect your activity.
-                        </div>
+                        <div className="text-white font-semibold">Your Wallet Address</div>
+                        <div className="text-white/70 text-sm">This is the address currently connected.</div>
                       </div>
-                    </div>
-                    <div className="mt-4 flex items-center justify-between">
-                      <div className="text-sm text-white/85">
-                        Current stealth: <span className="font-mono text-white">{stealthAddress}</span>
-                      </div>
-                      <Button
-                        onClick={rotateStealth}
-                        className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-[#f1ff8a] hover:text-[#0a0b0e] hover:border-transparent px-4 py-2 text-sm"
-                      >
-                        <RefreshCw className="w-4 h-4" /> Rotate
-                      </Button>
                     </div>
                     <div className="mt-4">
-                      <label className="flex items-center gap-2 text-xs text-white/70">
-                        <input
-                          type="checkbox"
-                          checked={advancedStealth}
-                          onChange={(e) => setAdvancedStealth(e.target.checked)}
-                        />
-                        Advanced: Generate multiple stealth addresses
-                      </label>
-                      {advancedStealth && (
-                        <div className="mt-2 flex items-center gap-3">
-                          <div className="text-xs text-white/70">Count</div>
-                          <Input
-                            type="number"
-                            min={1}
-                            max={10}
-                            value={extraStealthCount}
-                            onChange={(e) =>
-                              setExtraStealthCount(Math.max(1, Math.min(10, Number(e.target.value) || 1)))
-                            }
-                            className="w-24 bg-white/10 border-white/15 text-white"
-                          />
-                        </div>
-                      )}
+                      <div className="text-sm text-white/85">
+                        Address: <span className="font-mono text-white">{address ?? "Not connected"}</span>
+                      </div>
                     </div>
                     <div className="mt-4">
                       <Button
@@ -469,7 +315,7 @@ export default function OnboardingPage() {
                 )}
 
                 {/* 5. Compliance Preference */}
-                {step === 4 && (
+                {step === 3 && (
                   <Card>
                     <div className="flex items-start justify-between">
                       <div>
@@ -526,7 +372,7 @@ export default function OnboardingPage() {
                 )}
 
                 {/* 6. Feature Highlights */}
-                {step === 5 && (
+                {step === 4 && (
                   <Card>
                     <div className="text-white/90 text-base font-semibold mb-3">Feature Highlights</div>
                     <div className="grid sm:grid-cols-3 gap-3">
@@ -549,7 +395,7 @@ export default function OnboardingPage() {
                 )}
 
                 {/* 7. Finish */}
-                {step === 6 && (
+                {step === 5 && (
                   <Card>
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 rounded-full bg-[#e6ff55] text-[#0a0b0e] flex items-center justify-center">
@@ -595,8 +441,14 @@ export default function OnboardingPage() {
                   </Button>
                   <div className="text-white/60 text-xs">You can revisit settings later in the app</div>
                   <Button
-                    onClick={next}
-                    disabled={step === 7}
+                    onClick={() => {
+                      if (step === 1 && !isConnected) {
+                        openConnectModal?.()
+                        return
+                      }
+                      next()
+                    }}
+                    disabled={step === 5}
                     className="rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-[#f1ff8a] hover:text-[#0a0b0e] hover:border-transparent inline-flex items-center gap-2 disabled:opacity-50"
                   >
                     Next <ChevronRight className="w-4 h-4" />
