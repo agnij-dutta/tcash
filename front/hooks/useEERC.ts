@@ -264,7 +264,13 @@ export function useEERC() {
       throw new Error('Wallet not connected')
     }
 
-    const amountBigInt = BigInt(amount)
+    // Convert human-readable amount to Wei (multiply by 10^18)
+    const amountFloat = parseFloat(amount)
+    if (!isFinite(amountFloat) || amountFloat <= 0) {
+      throw new Error('Invalid amount')
+    }
+    
+    const amountBigInt = BigInt(Math.floor(amountFloat * Math.pow(10, erc20Decimals || 18)))
     const tokenAddr = tokenAddress || CONTRACT_ADDRESSES.erc20
     
     // Generate amountPCT for auditing (mock implementation)
@@ -325,7 +331,13 @@ export function useEERC() {
       throw new Error('Wallet not connected')
     }
 
-    const amountBigInt = BigInt(amount)
+    // Convert human-readable amount to Wei (multiply by 10^18)
+    const amountFloat = parseFloat(amount)
+    if (!isFinite(amountFloat) || amountFloat <= 0) {
+      throw new Error('Invalid amount')
+    }
+    
+    const amountBigInt = BigInt(Math.floor(amountFloat * Math.pow(10, erc20Decimals || 18)))
     const tokenId = BigInt(1) // Main ERC20 token ID
     
     // Generate withdraw proof (mock implementation)
@@ -395,7 +407,13 @@ export function useEERC() {
 
   // Private transfer function
   const transfer = useCallback(async (to: string, amount: string) => {
-    const amountBigInt = BigInt(amount)
+    // Convert human-readable amount to Wei (multiply by 10^18)
+    const amountFloat = parseFloat(amount)
+    if (!isFinite(amountFloat) || amountFloat <= 0) {
+      throw new Error('Invalid amount')
+    }
+    
+    const amountBigInt = BigInt(Math.floor(amountFloat * Math.pow(10, erc20Decimals || 18)))
     
     // Add transaction to history
     const txId = addTransaction({
