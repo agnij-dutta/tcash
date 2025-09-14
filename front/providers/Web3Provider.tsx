@@ -2,29 +2,21 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { WagmiProvider, createConfig, http } from "wagmi"
-import { avalanche } from "wagmi/chains"
+import { avalancheFuji } from "wagmi/chains"
 import { privateKeyToAccount } from "viem/accounts"
 import { createPublicClient, createWalletClient, custom } from "viem"
 import { ReactNode, useState } from "react"
 import { NETWORK_CONFIG } from "@/config/contracts"
 
-// Create a custom Avalanche chain configuration
-const avalancheChain = {
-  ...avalanche,
-  id: NETWORK_CONFIG.chainId,
-  name: NETWORK_CONFIG.name,
-  rpcUrls: {
-    default: { http: [NETWORK_CONFIG.rpcUrl] },
-    public: { http: [NETWORK_CONFIG.rpcUrl] }
-  },
-  blockExplorers: {
-    default: { name: 'Snowtrace', url: NETWORK_CONFIG.blockExplorer }
-  }
-}
+// Use Avalanche Fuji testnet directly
+const avalancheChain = avalancheFuji
 
 // Create account from private key
-const privateKey = process.env.NEXT_PUBLIC_PRIVATE_KEY || '95492791d9e40b7771b8b57117c399cc5e27d99d4959b7f9592925a398be7bdb'
-const account = privateKeyToAccount(`0x${privateKey}`)
+const privateKey = process.env.NEXT_PUBLIC_PRIVATE_KEY 
+if (!privateKey) {
+  throw new Error('NEXT_PUBLIC_PRIVATE_KEY environment variable is required')
+}
+const account = privateKeyToAccount(privateKey.startsWith('0x') ? privateKey as `0x${string}` : `0x${privateKey}`)
 
 // Create public and wallet clients
 const publicClient = createPublicClient({

@@ -3,29 +3,17 @@
 import { useMemo } from "react"
 import { privateKeyToAccount } from "viem/accounts"
 import { createPublicClient, createWalletClient, custom, http } from "viem"
-import { avalanche } from "wagmi/chains"
-import { NETWORK_CONFIG } from "@/config/contracts"
+import { avalancheFuji } from "wagmi/chains"
 
-// Create a custom Avalanche chain configuration
-const avalancheChain = {
-  ...avalanche,
-  id: NETWORK_CONFIG.chainId,
-  name: NETWORK_CONFIG.name,
-  rpcUrls: {
-    default: { http: [NETWORK_CONFIG.rpcUrl] },
-    public: { http: [NETWORK_CONFIG.rpcUrl] }
-  },
-  blockExplorers: {
-    default: { name: 'Snowtrace', url: NETWORK_CONFIG.blockExplorer }
-  }
-}
+// Use Avalanche Fuji testnet directly
+const avalancheChain = avalancheFuji
 
 export function useHardcodedWallet() {
   const walletData = useMemo(() => {
     try {
       // Get private key from environment or use hardcoded fallback
       const privateKey = process.env.NEXT_PUBLIC_PRIVATE_KEY || '95492791d9e40b7771b8b57117c399cc5e27d99d4959b7f9592925a398be7bdb'
-      const account = privateKeyToAccount(`0x${privateKey}`)
+      const account = privateKeyToAccount(privateKey.startsWith('0x') ? privateKey : `0x${privateKey}`)
       
       console.log("Creating hardcoded wallet with address:", account.address)
       

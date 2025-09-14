@@ -5,7 +5,7 @@ import { useHardcodedWallet } from "./useHardcodedWallet"
 import { CONTRACT_ADDRESSES } from "@/config/contracts"
 import { ERC20_ABI, EERC_CONVERTER_ABI, formatDisplayAmount } from "@/lib/constants"
 import { useState, useEffect } from "react"
-import { poseidon } from "poseidon-lite"
+// import { poseidon } from "poseidon-lite" // Temporarily disabled due to import issues
 
 export function useDirectEERC() {
   const { address, isConnected } = useHardcodedWallet()
@@ -117,24 +117,24 @@ export function useDirectEERC() {
   // Generate amountPCT for auditing using Poseidon encryption
   const generateAmountPCT = (amount: bigint, publicKey: [bigint, bigint]): [bigint, bigint, bigint, bigint, bigint, bigint, bigint] => {
     try {
-      // Create a simple ciphertext using Poseidon hash
+      // Create a simple ciphertext using basic hash (placeholder)
       // In a real implementation, this would use proper ElGamal encryption
       const ciphertext = [
-        poseidon([amount, publicKey[0], publicKey[1]]),
-        poseidon([amount + 1n, publicKey[0], publicKey[1]]),
-        poseidon([amount + 2n, publicKey[0], publicKey[1]]),
-        poseidon([amount + 3n, publicKey[0], publicKey[1]]),
-        poseidon([amount + 4n, publicKey[0], publicKey[1]]),
+        BigInt(amount.toString() + publicKey[0].toString() + publicKey[1].toString()) % BigInt(2**128),
+        BigInt((amount + 1n).toString() + publicKey[0].toString() + publicKey[1].toString()) % BigInt(2**128),
+        BigInt((amount + 2n).toString() + publicKey[0].toString() + publicKey[1].toString()) % BigInt(2**128),
+        BigInt((amount + 3n).toString() + publicKey[0].toString() + publicKey[1].toString()) % BigInt(2**128),
+        BigInt((amount + 4n).toString() + publicKey[0].toString() + publicKey[1].toString()) % BigInt(2**128),
       ]
       
       // Auth key components
       const authKey = [
-        poseidon([publicKey[0], publicKey[1]]),
-        poseidon([publicKey[1], publicKey[0]]),
+        BigInt(publicKey[0].toString() + publicKey[1].toString()) % BigInt(2**128),
+        BigInt(publicKey[1].toString() + publicKey[0].toString()) % BigInt(2**128),
       ]
       
       // Nonce
-      const nonce = poseidon([amount, publicKey[0]])
+      const nonce = BigInt(amount.toString() + publicKey[0].toString()) % BigInt(2**128)
       
       return [
         ciphertext[0],
@@ -189,12 +189,24 @@ export function useDirectEERC() {
       // In a real implementation, this would generate a proper ZK proof
       // For now, we'll create a placeholder proof structure
       const proofPoints = {
-        a: [poseidon([amount, userPublicKey[0]]), poseidon([amount, userPublicKey[1]])],
-        b: [
-          [poseidon([userPublicKey[0], encryptedBalance[0]]), poseidon([userPublicKey[1], encryptedBalance[1]])],
-          [poseidon([encryptedBalance[2], auditorPublicKey[0]]), poseidon([encryptedBalance[3], auditorPublicKey[1]])]
+        a: [
+          BigInt(amount.toString() + userPublicKey[0].toString()) % BigInt(2**128), 
+          BigInt(amount.toString() + userPublicKey[1].toString()) % BigInt(2**128)
         ],
-        c: [poseidon([amount, userPublicKey[0], userPublicKey[1]]), poseidon([encryptedBalance[0], encryptedBalance[1]])]
+        b: [
+          [
+            BigInt(userPublicKey[0].toString() + encryptedBalance[0].toString()) % BigInt(2**128), 
+            BigInt(userPublicKey[1].toString() + encryptedBalance[1].toString()) % BigInt(2**128)
+          ],
+          [
+            BigInt(encryptedBalance[2].toString() + auditorPublicKey[0].toString()) % BigInt(2**128), 
+            BigInt(encryptedBalance[3].toString() + auditorPublicKey[1].toString()) % BigInt(2**128)
+          ]
+        ],
+        c: [
+          BigInt(amount.toString() + userPublicKey[0].toString() + userPublicKey[1].toString()) % BigInt(2**128), 
+          BigInt(encryptedBalance[0].toString() + encryptedBalance[1].toString()) % BigInt(2**128)
+        ]
       }
       
       const publicSignals = [
@@ -202,13 +214,13 @@ export function useDirectEERC() {
         userPublicKey[0], userPublicKey[1], // user public key
         encryptedBalance[0], encryptedBalance[1], encryptedBalance[2], encryptedBalance[3], // encrypted balance
         auditorPublicKey[0], auditorPublicKey[1], // auditor public key
-        poseidon([amount, userPublicKey[0]]), // auditor PCT components
-        poseidon([amount, userPublicKey[1]]),
-        poseidon([userPublicKey[0], userPublicKey[1]]),
-        poseidon([auditorPublicKey[0], auditorPublicKey[1]]),
-        poseidon([amount, encryptedBalance[0]]),
-        poseidon([amount, encryptedBalance[1]]),
-        poseidon([amount, encryptedBalance[2]])
+        BigInt(amount.toString() + userPublicKey[0].toString()) % BigInt(2**128), // auditor PCT components
+        BigInt(amount.toString() + userPublicKey[1].toString()) % BigInt(2**128),
+        BigInt(userPublicKey[0].toString() + userPublicKey[1].toString()) % BigInt(2**128),
+        BigInt(auditorPublicKey[0].toString() + auditorPublicKey[1].toString()) % BigInt(2**128),
+        BigInt(amount.toString() + encryptedBalance[0].toString()) % BigInt(2**128),
+        BigInt(amount.toString() + encryptedBalance[1].toString()) % BigInt(2**128),
+        BigInt(amount.toString() + encryptedBalance[2].toString()) % BigInt(2**128)
       ]
       
       return {
@@ -233,19 +245,19 @@ export function useDirectEERC() {
   const generateBalancePCT = (newBalance: bigint, publicKey: [bigint, bigint]): [bigint, bigint, bigint, bigint, bigint, bigint, bigint] => {
     try {
       const ciphertext = [
-        poseidon([newBalance, publicKey[0], publicKey[1]]),
-        poseidon([newBalance + 1n, publicKey[0], publicKey[1]]),
-        poseidon([newBalance + 2n, publicKey[0], publicKey[1]]),
-        poseidon([newBalance + 3n, publicKey[0], publicKey[1]]),
-        poseidon([newBalance + 4n, publicKey[0], publicKey[1]]),
+        BigInt(newBalance.toString() + publicKey[0].toString() + publicKey[1].toString()) % BigInt(2**128),
+        BigInt((newBalance + 1n).toString() + publicKey[0].toString() + publicKey[1].toString()) % BigInt(2**128),
+        BigInt((newBalance + 2n).toString() + publicKey[0].toString() + publicKey[1].toString()) % BigInt(2**128),
+        BigInt((newBalance + 3n).toString() + publicKey[0].toString() + publicKey[1].toString()) % BigInt(2**128),
+        BigInt((newBalance + 4n).toString() + publicKey[0].toString() + publicKey[1].toString()) % BigInt(2**128),
       ]
       
       const authKey = [
-        poseidon([publicKey[0], publicKey[1]]),
-        poseidon([publicKey[1], publicKey[0]]),
+        BigInt(publicKey[0].toString() + publicKey[1].toString()) % BigInt(2**128),
+        BigInt(publicKey[1].toString() + publicKey[0].toString()) % BigInt(2**128),
       ]
       
-      const nonce = poseidon([newBalance, publicKey[0]])
+      const nonce = BigInt(newBalance.toString() + publicKey[0].toString()) % BigInt(2**128)
       
       return [
         ciphertext[0],
