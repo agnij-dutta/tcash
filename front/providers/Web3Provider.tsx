@@ -2,15 +2,15 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { WagmiProvider, createConfig, http } from "wagmi"
-import { avalanche } from "wagmi/chains"
-import { injected, metaMask } from "wagmi/connectors"
+import { avalancheFuji } from "wagmi/chains"
+import { injected, metaMask, walletConnect } from "wagmi/connectors"
 import { createPublicClient, createWalletClient, custom } from "viem"
 import { ReactNode, useState } from "react"
 import { NETWORK_CONFIG } from "@/config/contracts"
 
-// Create a custom Avalanche chain configuration
-const avalancheChain = {
-  ...avalanche,
+// Create a custom Avalanche Fuji chain configuration
+const avalancheFujiChain = {
+  ...avalancheFuji,
   id: NETWORK_CONFIG.chainId,
   name: NETWORK_CONFIG.name,
   rpcUrls: {
@@ -18,19 +18,22 @@ const avalancheChain = {
     public: { http: [NETWORK_CONFIG.rpcUrl] }
   },
   blockExplorers: {
-    default: { name: 'Snowtrace', url: NETWORK_CONFIG.blockExplorer }
+    default: { name: 'Snowscan Testnet', url: NETWORK_CONFIG.blockExplorer }
   }
 }
 
 // Configure wagmi
 const config = createConfig({
-  chains: [avalancheChain],
+  chains: [avalancheFujiChain],
   connectors: [
     injected(),
-    metaMask()
+    metaMask(),
+    // walletConnect({
+    //   projectId: 'your-project-id', // Add your WalletConnect project ID if needed
+    // })
   ],
   transports: {
-    [avalancheChain.id]: http(),
+    [avalancheFujiChain.id]: http(),
   },
 })
 

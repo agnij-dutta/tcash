@@ -19,7 +19,7 @@ import { useRouter } from "next/navigation"
 import { useAccount } from "wagmi"
 import { useEERC } from "@/hooks/useEERC"
 import { useEncryptedBalance } from "@/hooks/useEncryptedBalance"
-import { WalletConnect } from "@/components/wallet-connect"
+import { WalletConnect } from "@/components/ui/wallet-connect"
 
 type TokenRow = {
   symbol: string
@@ -31,10 +31,13 @@ type TokenRow = {
 export default function TsunamiDashboard() {
   const router = useRouter()
   const { address, isConnected } = useAccount()
-  const { 
-    isInitialized, 
-    isRegistered, 
-    register
+  const {
+    isInitialized,
+    isRegistered,
+    register,
+    registrationStatus,
+    checkRegistrationStatus,
+    addLog
   } = useEERC()
   const { 
     decryptedBalance, 
@@ -125,16 +128,41 @@ export default function TsunamiDashboard() {
   if (!isRegistered && isInitialized) {
     return (
       <div className="relative min-h-screen w-full overflow-hidden flex flex-col font-sans items-center justify-center">
-        <div className="text-center max-w-md">
+        <div className="text-center max-w-md space-y-6">
           <Shield className="w-16 h-16 text-white/60 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-white mb-2">Register for eERC</h2>
           <p className="text-white/60 mb-6">You need to register with the eERC protocol to start using private tokens</p>
-          <button
-            onClick={register}
-            className="px-6 py-3 rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold hover:brightness-110 transition-all"
-          >
-            Register Now
-          </button>
+
+          {/* Debug info */}
+          <div className="bg-black/20 border border-white/10 rounded-lg p-4 text-sm text-white/70">
+            <div>Registration Status: <span className="font-mono text-white">{registrationStatus}</span></div>
+            <div>Address: <span className="font-mono text-white">{address?.slice(0, 8)}...{address?.slice(-6)}</span></div>
+            <div>SDK Initialized: <span className="text-white">{isInitialized ? '✅' : '❌'}</span></div>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={register}
+              className="px-6 py-3 rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold hover:brightness-110 transition-all"
+            >
+              Register Now
+            </button>
+            <button
+              onClick={() => {
+                addLog('info', 'Manual registration check requested')
+                checkRegistrationStatus()
+              }}
+              className="px-4 py-2 rounded-full bg-white/10 border border-white/20 text-white/80 hover:bg-white/15 transition-all text-sm"
+            >
+              Check Registration Status
+            </button>
+            <button
+              onClick={() => router.push('/onboarding')}
+              className="px-4 py-2 rounded-full bg-white/10 border border-white/20 text-white/80 hover:bg-white/15 transition-all text-sm"
+            >
+              Go to Onboarding
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -186,6 +214,9 @@ export default function TsunamiDashboard() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 text-emerald-300 text-xs px-2.5 py-1.5 rounded-md bg-emerald-500/15 border border-emerald-500/40">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Registered
+              </span>
               {hasZkAttestation ? (
                 <span className="inline-flex items-center gap-1.5 text-emerald-300 text-xs px-2.5 py-1.5 rounded-md bg-emerald-500/15 border border-emerald-500/40">
                   <CheckCircle2 className="w-3.5 h-3.5" /> Compliant

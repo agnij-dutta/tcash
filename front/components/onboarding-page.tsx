@@ -2,10 +2,12 @@
 
 import type React from "react"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useAccount } from "wagmi"
 import { useEERC } from "@/hooks/useEERC"
+import { generateSecureSeedPhrase, generateStealthAddress, validateSeedPhrase, validatePrivateKey } from "@/lib/crypto"
+import { WalletConnect, WalletConnectButton } from "@/components/ui/wallet-connect"
 import {
   Shield,
   Wallet,
@@ -34,42 +36,25 @@ const FEATURE_CARDS = [
   { title: "Withdraw Flexibly", desc: "Stay private or prove compliance when needed" },
 ]
 
-function generateSeed(words = 12) {
-  const list = [
-    "ocean",
-    "wave",
-    "storm",
-    "reef",
-    "coral",
-    "island",
-    "current",
-    "spray",
-    "tidal",
-    "whale",
-    "shell",
-    "pearl",
-    "drift",
-    "sprout",
-    "amber",
-    "harbor",
-    "siren",
-    "azure",
-    "mist",
-    "delta",
-    "brine",
-    "gale",
-    "lunar",
-    "sable",
-  ]
-  const out: string[] = []
-  for (let i = 0; i < words; i++) out.push(list[Math.floor(Math.random() * list.length)])
-  return out
-}
 
 export default function OnboardingPage() {
   const router = useRouter()
   const { address, isConnected } = useAccount()
-  const { isInitialized, isRegistered, register, generateDecryptionKey } = useEERC()
+  const {
+    isInitialized,
+    isRegistered,
+    register,
+    generateDecryptionKey,
+    checkRegistrationStatus,
+    registrationStatus,
+    transactionHash,
+    logs,
+    canRegister,
+    canGenerateKey,
+    isRegistrationComplete,
+    addLog,
+    clearStoredData
+  } = useEERC()
   const [step, setStep] = useState(0)
   const [mode, setMode] = useState<Mode>("create")
 
@@ -100,23 +85,61 @@ export default function OnboardingPage() {
   const [registrationError, setRegistrationError] = useState<string | null>(null)
   const [registrationStep, setRegistrationStep] = useState<'generate' | 'register' | 'complete'>('generate')
   const [retryCount, setRetryCount] = useState(0)
+  const [showDebugPanel, setShowDebugPanel] = useState(false)
+  const hasCheckedRegistration = useRef(false)
 
-  // Init defaults
+  // Init defaults with secure generation
   useEffect(() => {
-    if (seed.length === 0) setSeed(generateSeed(12))
+    if (seed.length === 0) {
+      try {
+        setSeed(generateSecureSeedPhrase(12))
+        addLog('info', 'Secure seed phrase generated')
+      } catch (error) {
+        addLog('error', 'Failed to generate secure seed phrase', { error })
+        // Fallback to less secure method if needed
+        setSeed(['fallback', 'seed', 'phrase', 'generation', 'failed', 'please', 'import', 'your', 'own', 'seed', 'phrase', 'instead'])
+      }
+    }
     if (!stealthAddress) rotateStealth()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // eERC Registration functions
-  const handleGenerateDecryptionKey = async () => {
-    if (!isConnected) {
-      setRegistrationError("Please connect your wallet first")
-      return
+  // Check registration status when wallet connects (only once per address)
+  useEffect(() => {
+    if (isConnected && isInitialized && address && !hasCheckedRegistration.current) {
+      hasCheckedRegistration.current = true
+
+      // Add a small delay to prevent immediate firing
+      const timeoutId = setTimeout(() => {
+        checkRegistrationStatus().then(isRegistered => {
+          if (isRegistered) {
+            addLog('info', 'User is already registered on-chain')
+          }
+        }).catch(error => {
+          addLog('warn', 'Could not check registration status', { error })
+        })
+      }, 1000)
+
+      return () => clearTimeout(timeoutId)
     }
 
-    if (!isInitialized) {
-      setRegistrationError("eERC SDK is not initialized. Please wait a moment and try again.")
+    // Reset check flag when address changes
+    if (!address) {
+      hasCheckedRegistration.current = false
+    }
+  }, [isConnected, isInitialized, address]) // Removed checkRegistrationStatus and addLog from deps
+
+  // Enhanced eERC Registration functions
+  const handleGenerateDecryptionKey = async () => {
+    if (!canGenerateKey) {
+      const reasons = []
+      if (!address) reasons.push('wallet not connected')
+      if (!isInitialized) reasons.push('SDK not initialized')
+      if (registrationStatus !== 'not_started') reasons.push(`registration already ${registrationStatus}`)
+
+      const errorMessage = `Cannot generate key: ${reasons.join(', ')}`
+      setRegistrationError(errorMessage)
+      addLog('error', errorMessage)
       return
     }
 
@@ -124,23 +147,22 @@ export default function OnboardingPage() {
       setIsRegistering(true)
       setRegistrationError(null)
       setRegistrationStep('generate')
-      
-      console.log("Attempting to generate decryption key...")
-      console.log("eERC state:", { isInitialized, isConnected, address })
-      
+
+      addLog('info', 'Starting decryption key generation')
+
       // Generate decryption key
       const key = await generateDecryptionKey()
-      console.log("Decryption key generated successfully")
+      addLog('info', 'Decryption key generated successfully')
       setRegistrationStep('register')
-      
+
     } catch (error) {
-      console.error("Key generation failed:", error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       setRegistrationError(`Key generation failed: ${errorMessage}`)
-      
+      addLog('error', 'Key generation failed', { error: errorMessage })
+
       // Auto-retry once if it's an initialization error
       if (errorMessage.includes('not initialized') && retryCount < 1) {
-        console.log("Retrying key generation...")
+        addLog('info', 'Auto-retrying key generation...')
         setRetryCount(prev => prev + 1)
         setTimeout(() => {
           handleGenerateDecryptionKey()
@@ -152,13 +174,15 @@ export default function OnboardingPage() {
   }
 
   const handleRegister = async () => {
-    if (!isConnected) {
-      setRegistrationError("Please connect your wallet first")
-      return
-    }
+    if (!canRegister) {
+      const reasons = []
+      if (!address) reasons.push('wallet not connected')
+      if (!isInitialized) reasons.push('SDK not initialized')
+      if (registrationStatus !== 'key_generated') reasons.push(`need to generate key first (current: ${registrationStatus})`)
 
-    if (!isInitialized) {
-      setRegistrationError("eERC SDK is not initialized. Please wait a moment and try again.")
+      const errorMessage = `Cannot register: ${reasons.join(', ')}`
+      setRegistrationError(errorMessage)
+      addLog('error', errorMessage)
       return
     }
 
@@ -166,21 +190,32 @@ export default function OnboardingPage() {
       setIsRegistering(true)
       setRegistrationError(null)
       setRegistrationStep('register')
-      
+
+      addLog('info', 'Starting eERC protocol registration')
+
       // Register with eERC protocol
       const result = await register()
-      console.log("Registration successful:", result)
-      
+      addLog('info', 'Registration successful', {
+        transactionHash: result?.transactionHash,
+        alreadyRegistered: result?.alreadyRegistered
+      })
+
       setRegistrationStep('complete')
-      
+
+      // Store transaction hash if available
+      if (result?.transactionHash) {
+        setTransactionHash(result.transactionHash)
+      }
+
       // Move to next step after successful registration
       setTimeout(() => {
         setStep(step + 1)
       }, 1500)
-      
+
     } catch (error) {
-      console.error("Registration failed:", error)
-      setRegistrationError(`Registration failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      setRegistrationError(`Registration failed: ${errorMessage}`)
+      addLog('error', 'Registration failed', { error: errorMessage })
     } finally {
       setIsRegistering(false)
     }
@@ -194,10 +229,19 @@ export default function OnboardingPage() {
   }
 
   function rotateStealth() {
-    const rand = Array.from(crypto.getRandomValues(new Uint8Array(6)))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("")
-    setStealthAddress(`0x${rand}...${rand.slice(-4)}`)
+    try {
+      const newAddress = generateStealthAddress()
+      const displayAddress = `${newAddress.slice(0, 8)}...${newAddress.slice(-6)}`
+      setStealthAddress(displayAddress)
+      addLog('info', 'Stealth address rotated')
+    } catch (error) {
+      addLog('error', 'Failed to generate stealth address', { error })
+      // Fallback
+      const rand = Array.from(crypto.getRandomValues(new Uint8Array(6)))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("")
+      setStealthAddress(`0x${rand}...${rand.slice(-4)}`)
+    }
   }
 
   // Choose 3 indices to confirm on key backup step
@@ -220,17 +264,27 @@ export default function OnboardingPage() {
       setImportError("Enter your seed phrase (12/24 words) or a private key")
       return false
     }
+
     const words = trimmed.split(/\s+/)
+
+    // Check if it's a private key (single word/string)
     if (words.length === 1) {
-      const ok = /^0x?[0-9a-fA-F]{64}$/.test(words[0])
-      if (!ok) {
-        setImportError("Private key must be 64 hex characters")
+      const validation = validatePrivateKey(words[0])
+      if (!validation.isValid) {
+        setImportError(validation.error || "Invalid private key format")
         return false
       }
-    } else if (words.length !== 12 && words.length !== 24) {
-      setImportError("Seed phrase must be 12 or 24 words")
-      return false
+      addLog('info', 'Valid private key format detected')
+    } else {
+      // Check if it's a seed phrase
+      const validation = validateSeedPhrase(trimmed)
+      if (!validation.isValid) {
+        setImportError(validation.errors.join(', '))
+        return false
+      }
+      addLog('info', 'Valid seed phrase format detected')
     }
+
     setImportError(null)
     return true
   }
@@ -301,13 +355,82 @@ export default function OnboardingPage() {
                   </div>
                   <div className="text-sm font-light tracking-tight bg-gradient-to-b from-white via-zinc-300 to-zinc-500 bg-clip-text text-transparent">Tsunami Onboarding</div>
                 </div>
-                <div className="text-xs text-white/70">Step {step + 1} / 7</div>
+                <div className="flex items-center gap-3">
+                  <WalletConnect size="sm" variant="outline" />
+                  <button
+                    onClick={() => setShowDebugPanel(!showDebugPanel)}
+                    className="text-xs text-white/50 hover:text-white/80 px-2 py-1 rounded border border-white/20"
+                  >
+                    {showDebugPanel ? 'Hide' : 'Debug'}
+                  </button>
+                  <div className="text-xs text-white/70">Step {step + 1} / 7</div>
+                </div>
               </div>
 
               {/* Progress */}
               <div className="mt-4">
                 <Progress value={((step + 1) / 7) * 100} className="h-2 bg-white/10" />
               </div>
+
+              {/* Debug Panel */}
+              {showDebugPanel && (
+                <Card className="mt-4 bg-black/20 border-white/10">
+                  <div className="text-white font-semibold mb-3 text-sm">Debug Panel</div>
+                  <div className="space-y-3 text-xs">
+                    {/* eERC Status */}
+                    <div>
+                      <div className="text-white/80 font-medium">eERC Status:</div>
+                      <div className="text-white/60 space-y-1">
+                        <div>• Connected: {isConnected ? '✅' : '❌'} {address ? `(${address.slice(0, 8)}...)` : ''}</div>
+                        <div>• SDK Initialized: {isInitialized ? '✅' : '❌'}</div>
+                        <div>• Registration Status: <span className="font-mono">{registrationStatus}</span></div>
+                        <div>• Can Generate Key: {canGenerateKey ? '✅' : '❌'}</div>
+                        <div>• Can Register: {canRegister ? '✅' : '❌'}</div>
+                        <div>• Is Registered: {isRegistered ? '✅' : '❌'}</div>
+                        {transactionHash && <div>• TX Hash: <span className="font-mono">{transactionHash.slice(0, 10)}...{transactionHash.slice(-8)}</span></div>}
+                      </div>
+                    </div>
+
+                    {/* Recent Logs */}
+                    {logs.length > 0 && (
+                      <div>
+                        <div className="text-white/80 font-medium">Recent Logs:</div>
+                        <div className="bg-black/40 rounded p-2 max-h-32 overflow-y-auto space-y-1">
+                          {logs.slice(-5).map((log, i) => (
+                            <div key={i} className="text-white/70 text-xs">
+                              <span className={`mr-2 ${
+                                log.level === 'error' ? 'text-red-400' :
+                                log.level === 'warn' ? 'text-yellow-400' : 'text-blue-400'
+                              }`}>
+                                {log.level.toUpperCase()}
+                              </span>
+                              <span className="text-white/50">{log.timestamp.toLocaleTimeString()}:</span>
+                              <span className="ml-1">{log.message}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Debug Actions */}
+                    <div className="flex gap-2 pt-2 border-t border-white/10">
+                      <Button
+                        onClick={() => checkRegistrationStatus()}
+                        className="text-xs h-7 px-3 bg-white/10 hover:bg-white/20"
+                        disabled={!isConnected}
+                      >
+                        Check Status
+                      </Button>
+                      <Button
+                        onClick={clearStoredData}
+                        className="text-xs h-7 px-3 bg-red-500/20 hover:bg-red-500/30 text-red-200"
+                      >
+                        Reset Data
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              )}
 
               {/* Content */}
               <div className="mt-6 space-y-6">
@@ -323,12 +446,19 @@ export default function OnboardingPage() {
                       <div className="text-white/60 text-sm max-w-xl">
                         Your tokens, your privacy. Built on Uniswap v4 + zkSNARKs.
                       </div>
-                      <Button
-                        onClick={next}
-                        className="mt-2 rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold px-6 h-11 hover:brightness-110"
-                      >
-                        Get Started
-                      </Button>
+                      <div className="flex flex-col items-center gap-3 mt-4">
+                        <Button
+                          onClick={next}
+                          className="rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold px-6 h-11 hover:brightness-110"
+                        >
+                          Get Started
+                        </Button>
+                        {!isConnected && (
+                          <div className="text-xs text-white/50">
+                            Tip: You can connect your wallet anytime using the button above
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </Card>
                 )}
@@ -511,9 +641,10 @@ export default function OnboardingPage() {
 
                     <div className="mt-6 space-y-4">
                       {!isConnected ? (
-                        <div className="text-center py-8">
+                        <div className="text-center py-8 space-y-4">
                           <Wallet className="w-12 h-12 text-white/40 mx-auto mb-4" />
-                          <div className="text-white/60 text-sm">Please connect your wallet to continue</div>
+                          <div className="text-white/60 text-sm mb-4">Please connect your wallet to continue with eERC registration</div>
+                          <WalletConnectButton className="bg-[#e6ff55] text-[#0a0b0e] hover:brightness-110" />
                         </div>
                       ) : !isInitialized ? (
                         <div className="text-center py-8">
@@ -544,7 +675,7 @@ export default function OnboardingPage() {
                             )}
                           </Button>
                         </div>
-                      ) : registrationStep === 'register' ? (
+                      ) : registrationStep === 'register' && !isRegistrationComplete ? (
                         <div className="space-y-4">
                           <div className="text-white/80 text-sm">
                             Step 2: Register with the eERC protocol using zero-knowledge proofs
@@ -566,12 +697,17 @@ export default function OnboardingPage() {
                             ) : (
                               <>
                                 <Shield className="w-4 h-4 mr-2" />
-                                Register with eERC
+                            Register with eERC
                               </>
                             )}
                           </Button>
+                          {transactionHash && (
+                            <div className="text-xs text-white/60 mt-2">
+                              Transaction: {transactionHash.slice(0, 10)}...{transactionHash.slice(-8)}
+                            </div>
+                          )}
                         </div>
-                      ) : registrationStep === 'complete' ? (
+                      ) : registrationStep === 'complete' || isRegistrationComplete ? (
                         <div className="text-center py-4">
                           <CheckCircle2 className="w-12 h-12 text-emerald-300 mx-auto mb-4" />
                           <div className="text-white font-semibold mb-2">Registration Complete!</div>

@@ -13,34 +13,34 @@ export const CONTRACT_ADDRESSES = {
 } as const
 
 // Circuit URLs for ZK proof generation
-// These should point to the actual circuit files from the EncryptedERC repository
+// These point to the actual circuit files in the public directory
 export const CIRCUIT_URLS = {
   register: {
-    wasm: '/circuits/registration.wasm',
-    zkey: '/circuits/registration.zkey'
+    wasm: '/circuits/registration/registration.wasm',
+    zkey: '/circuits/registration/circuit_final.zkey'
   },
   transfer: {
-    wasm: '/circuits/transfer.wasm',
-    zkey: '/circuits/transfer.zkey'
+    wasm: '/circuits/transfer/transfer.wasm',
+    zkey: '/circuits/transfer/transfer.zkey'
   },
   mint: {
-    wasm: '/circuits/mint.wasm',
-    zkey: '/circuits/mint.zkey'
+    wasm: '/circuits/mint/mint.wasm',
+    zkey: '/circuits/mint/mint.zkey'
   },
   withdraw: {
-    wasm: '/circuits/withdraw.wasm',
-    zkey: '/circuits/withdraw.zkey'
+    wasm: '/circuits/withdraw/withdraw.wasm',
+    zkey: '/circuits/withdraw/circuit_final.zkey'
   },
   burn: {
-    wasm: '/circuits/burn.wasm',
-    zkey: '/circuits/burn.zkey'
+    wasm: '/circuits/burn/burn.wasm',
+    zkey: '/circuits/burn/burn.zkey'
   }
 } as const
 
 // Network configuration
 export const NETWORK_CONFIG = {
-  chainId: 43114, // Avalanche Mainnet
-  name: 'Avalanche',
-  rpcUrl: 'https://api.avax.network/ext/bc/C/rpc',
-  blockExplorer: 'https://snowtrace.io'
+  chainId: 43113, // Avalanche Fuji Testnet
+  name: 'Avalanche Fuji Testnet',
+  rpcUrl: 'https://api.avax-test.network/ext/bc/C/rpc',
+  blockExplorer: 'https://testnet.snowscan.xyz'
 } as const

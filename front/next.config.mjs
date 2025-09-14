@@ -30,7 +30,7 @@ const nextConfig = {
         'node:stream': 'stream-browserify',
         'node:util': 'util'
       }
-      
+
       // Add externals to exclude node: imports
       config.externals = {
         ...config.externals,
@@ -41,6 +41,30 @@ const nextConfig = {
         'node:util': 'util'
       }
     }
+
+    // Add support for WASM files
+    config.experiments = {
+      ...config.experiments,
+      asyncWebAssembly: true
+    }
+
+    // Ensure proper handling of .wasm and .zkey files
+    config.module.rules.push(
+      {
+        test: /\.wasm$/,
+        type: 'asset/resource',
+        generator: {
+          filename: 'static/wasm/[name].[hash][ext]'
+        }
+      },
+      {
+        test: /\.zkey$/,
+        type: 'asset/resource',
+        generator: {
+          filename: 'static/zkey/[name].[hash][ext]'
+        }
+      }
+    )
     
     // Ignore specific warnings
     config.ignoreWarnings = [
@@ -51,6 +75,36 @@ const nextConfig = {
   },
   experimental: {
     esmExternals: 'loose'
+  },
+  async headers() {
+    return [
+      {
+        source: '/circuits/:path*.wasm',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'application/wasm'
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable'
+          }
+        ]
+      },
+      {
+        source: '/circuits/:path*.zkey',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'application/octet-stream'
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable'
+          }
+        ]
+      }
+    ]
   }
 }
 
