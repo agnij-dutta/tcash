@@ -4,7 +4,8 @@ import { http, createConfig } from 'wagmi'
 import { mainnet, sepolia, avalancheFuji, celo, celoAlfajores } from 'wagmi/chains'
 import { 
   injected, 
-  coinbaseWallet 
+  coinbaseWallet,
+  walletConnect
 } from 'wagmi/connectors'
 
 export const config = createConfig({
@@ -27,6 +28,17 @@ export const config = createConfig({
       appLogoUrl: 'https://tcash.app/logo.png',
       darkMode: true,
     }),
+
+    // WalletConnect v2
+    walletConnect({
+      projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'your-project-id',
+      metadata: {
+        name: 'T-Cash',
+        description: 'Private. Compliant. DeFi-native.',
+        url: 'https://tcash.app',
+        icons: ['https://tcash.app/logo.png'],
+      },
+    }),
   ],
   transports: {
     [celoAlfajores.id]: http('https://alfajores-forno.celo-testnet.org'),
@@ -42,5 +54,3 @@ declare module 'wagmi' {
     config: typeof config
   }
 }
-
-

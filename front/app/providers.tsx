@@ -7,7 +7,15 @@ import { config } from "../lib/wagmi-config"
 import { Toaster } from "@/components/ui/sonner"
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  const queryClient = new QueryClient()
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+        refetchOnWindowFocus: false,
+      },
+    },
+  })
+
   return (
     <WagmiProvider config={config} reconnectOnMount={false}>
       <QueryClientProvider client={queryClient}>

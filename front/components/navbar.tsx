@@ -2,7 +2,7 @@
 import { Shield, Home, ArrowLeftRight, BarChart3, Plus, Minus, User } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useState } from 'react'
-import { SimpleWalletButton } from './simple-wallet-connect'
+import { WalletConnect } from './wallet-connect'
 
 export default function Navbar() {
   const router = useRouter()
@@ -27,7 +27,7 @@ export default function Navbar() {
             </button>
             {pathname === "/" ? (
               <div className="flex items-center gap-2">
-                <SimpleWalletButton />
+                <WalletConnect />
               </div>
             ) : (
               <div className="flex items-center gap-6">
@@ -74,7 +74,7 @@ export default function Navbar() {
                   KYC Test
                 </button>
                 <div className="flex items-center gap-2">
-                  <SimpleWalletButton />
+                  <WalletConnect />
                 </div>
               </div>
             )}
