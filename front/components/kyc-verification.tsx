@@ -42,10 +42,11 @@ export default function KYCVerification({
       await new Promise(resolve => setTimeout(resolve, 3000)) // Simulate processing
       
       // Simulate successful verification
+      const now = Date.now()
       const verificationResult: KYCStatus = {
         isVerified: true,
-        verificationId: `KYC_${Date.now()}`,
-        timestamp: Date.now()
+        verificationId: `KYC_${now}`,
+        timestamp: now
       }
       
       setKycStatus(verificationResult)
@@ -123,7 +124,7 @@ export default function KYCVerification({
               <h3 className="text-lg font-medium text-white">Verification Status</h3>
               <p className="text-sm text-white/60">
                 {kycStatus.isVerified 
-                  ? `Verified on ${new Date(kycStatus.timestamp!).toLocaleDateString()}`
+                  ? `Verified on ${new Date(kycStatus.timestamp!).toLocaleDateString('en-US')}`
                   : "Complete verification to access private features"
                 }
               </p>

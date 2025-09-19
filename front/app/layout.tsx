@@ -8,7 +8,7 @@ import Navbar from "../components/navbar"
 import { Toaster } from "@/components/ui/sonner"
 import ClientProviders from "./providers"
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
+const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "tZunami - Private. Compliant. DeFi-native.",
@@ -22,8 +22,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={`${inter.variable} font-sans bg-black text-white tz-metal min-h-screen overflow-x-hidden`}>
+    <html lang="en" className={inter.className}>
+      <body className="font-sans bg-black text-white tz-metal min-h-screen overflow-x-hidden">
         <ClientProviders>
         {/* Global metallic gradient defs for strokes and text backgrounds */}
         <svg aria-hidden="true" width="0" height="0" className="absolute">
