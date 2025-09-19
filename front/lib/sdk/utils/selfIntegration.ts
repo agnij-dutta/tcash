@@ -2,278 +2,32 @@
 import { SelfProof, IdentityData } from '../types/contracts';
 import QRCode from 'qrcode';
 
-interface VerificationSessionData {
-  scope: string;
-  configId: string;
-  endpoint: string;
-  userId: string;
-  requirements?: any;
-}
-
-/**
- * Enhanced Self.xyz Integration Utility
- * Provides comprehensive integration with Self.xyz for privacy-preserving KYC
- */
 export class SelfIntegration {
-  private static readonly SELF_APP_BASE_URL = 'https://app.self.xyz';
-  private static readonly API_VERSION = 'v2';
-  private static readonly SESSION_TIMEOUT = 300000; // 5 minutes
-
   /**
-   * Generate a Self.xyz verification session with QR code
-   * Enhanced with proper Self.xyz protocol integration
-   */
-  static async createVerificationSession(sessionData: VerificationSessionData): Promise<{
-    sessionId: string;
-    qrCode: string;
-    qrCodeData: string;
-    deepLink: string;
-    expiresAt: Date;
-    pollUrl: string;
-  }> {
-    const sessionId = `tcash_${Date.now()}_${this.generateRandomHex(16)}`;
-    
-    // Enhanced session data for Self.xyz
-    const enhancedSessionData = {
-      // Core Self.xyz protocol fields
-      protocol: 'self-verification',
-      version: this.API_VERSION,
-      app: {
-        name: 'T-Cash',
-        id: sessionData.configId,
-        version: '1.0.0',
-        logo: `${typeof window !== 'undefined' ? window.location.origin : ''}/logo.png`
-      },
-      
-      // Session management
-      session: {
-        id: sessionId,
-        scope: sessionData.scope,
-        timestamp: Date.now(),
-        expiresAt: Date.now() + this.SESSION_TIMEOUT,
-        locale: 'en'
-      },
-      
-      // Verification requirements
-      requirements: {
-        minimumAge: 18,
-        requireOfacCheck: true,
-        allowedDocumentTypes: [1, 2], // E-Passport, EU ID Card
-        excludedCountries: [],
-        verificationLevel: 'standard',
-        complianceRequired: true,
-        ...sessionData.requirements
-      },
-      
-      // Callback configuration
-      callbacks: {
-        success: `${sessionData.endpoint}/success`,
-        error: `${sessionData.endpoint}/error`,
-        poll: `${sessionData.endpoint}/poll/${sessionId}`
-      },
-      
-      // Security and privacy
-      security: {
-        nonce: this.generateRandomHex(32),
-        challenge: `challenge_${Date.now()}`,
-        encryptionKey: this.generateRandomHex(64)
-      },
-      
-      // User context
-      user: {
-        id: sessionData.userId,
-        context: 'onchain-kyc',
-        chainId: 44787, // Celo Alfajores
-        network: 'celo-alfajores'
-      }
-    };
-
-    // Generate QR code with enhanced styling and error correction
-    const qrCode = await this.generateEnhancedQRCode(enhancedSessionData);
-    
-    // Create deep link for direct app opening
-    const deepLink = this.createDeepLink(enhancedSessionData);
-
-    return {
-      sessionId,
-      qrCode,
-      qrCodeData: JSON.stringify(enhancedSessionData),
-      deepLink,
-      expiresAt: new Date(enhancedSessionData.session.expiresAt),
-      pollUrl: enhancedSessionData.callbacks.poll
-    };
-  }
-
-  /**
-   * Generate enhanced QR code with proper Self.xyz formatting
-   */
-  private static async generateEnhancedQRCode(sessionData: any): Promise<string> {
-    try {
-      // Compress session data for QR code efficiency
-      const compressedData = this.compressSessionData(sessionData);
-      
-      return await QRCode.toDataURL(JSON.stringify(compressedData), {
-        width: 320,
-        margin: 4,
-        color: {
-          dark: '#1a1a1a',
-          light: '#ffffff'
-        },
-        errorCorrectionLevel: 'H' // High error correction for mobile scanning
-      });
-    } catch (error) {
-      console.error('Enhanced QR code generation failed:', error);
-      throw new Error('Failed to generate Self.xyz QR code');
-    }
-  }
-
-  /**
-   * Create deep link for Self.xyz mobile app
-   */
-  private static createDeepLink(sessionData: any): string {
-    const params = new URLSearchParams({
-      action: 'verify',
-      session: sessionData.session.id,
-      app: sessionData.app.id,
-      version: sessionData.version
-    });
-    
-    return `selfapp://verify?${params.toString()}`;
-  }
-
-  /**
-   * Compress session data for efficient QR code encoding
-   */
-  private static compressSessionData(sessionData: any): any {
-    return {
-      p: sessionData.protocol,
-      v: sessionData.version,
-      s: sessionData.session.id,
-      a: sessionData.app.id,
-      e: sessionData.session.expiresAt,
-      r: {
-        age: sessionData.requirements.minimumAge,
-        ofac: sessionData.requirements.requireOfacCheck,
-        docs: sessionData.requirements.allowedDocumentTypes,
-        lvl: sessionData.requirements.verificationLevel
-      },
-      c: sessionData.callbacks.poll,
-      u: sessionData.user.id,
-      n: sessionData.security.nonce
-    };
-  }
-
-  /**
-   * Poll verification status from Self.xyz
-   */
-  static async pollVerificationStatus(sessionId: string, pollUrl: string): Promise<{
-    status: 'pending' | 'completed' | 'failed' | 'expired';
-    proof?: SelfProof;
-    error?: string;
-  }> {
-    try {
-      const response = await fetch(pollUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Session-ID': sessionId
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Poll request failed: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      
-      if (result.status === 'completed' && result.proof) {
-        // Validate and format the proof
-        const formattedProof = this.formatSelfProof(result.proof);
-        return {
-          status: 'completed',
-          proof: formattedProof
-        };
-      }
-
-      return {
-        status: result.status,
-        error: result.error
-      };
-    } catch (error) {
-      console.error('Verification polling failed:', error);
-      return {
-        status: 'failed',
-        error: error instanceof Error ? error.message : 'Polling failed'
-      };
-    }
-  }
-
-  /**
-   * Format Self.xyz proof to match our contract requirements
-   */
-  private static formatSelfProof(rawProof: any): SelfProof {
-    return {
-      nullifier: rawProof.nullifier || '0x' + this.generateRandomHex(64),
-      userIdentifier: rawProof.userIdentifier || '0x' + this.generateRandomHex(64),
-      nationality: rawProof.nationality || 'US',
-      documentType: rawProof.documentType || 1,
-      ageAtLeast: rawProof.ageAtLeast || 18,
-      isOfacMatch: rawProof.isOfacMatch || false,
-      attestationId: rawProof.attestationId || '0x' + this.generateRandomHex(64),
-      proof: rawProof.zkProof || '0x' + this.generateRandomHex(128),
-      timestamp: rawProof.timestamp || Date.now()
-    };
-  }
-
-  /**
-   * Generate a Self.xyz proof (enhanced implementation for development)
-   * In production, this would be replaced by actual Self.xyz SDK calls
+   * Generate a Self.xyz proof (mock implementation)
+   * In a real implementation, this would integrate with Self.xyz mobile app
    */
   static async generateProof(identityData: IdentityData): Promise<SelfProof> {
-    // For development, create a session and simulate the flow
-    const sessionData: VerificationSessionData = {
-      scope: identityData.scope || 'tcash-kyc-v2',
-      configId: identityData.configId || '1',
-      endpoint: 'http://localhost:3001/api/kyc',
-      userId: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6'
-    };
+    // Simulate proof generation delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
-    const session = await this.createVerificationSession(sessionData);
-    
     // In a real implementation, this would:
-    // 1. Show QR code to user
-    // 2. Wait for mobile app scan
-    // 3. Poll for verification completion
-    // 4. Return actual proof from Self.xyz
-    
-    // For development, simulate the full flow
-    await this.simulateVerificationFlow(session);
+    // 1. Generate QR code for Self.xyz mobile app
+    // 2. Handle mobile app interaction
+    // 3. Process verification results
+    // 4. Return actual proof data
 
-    return this.formatSelfProof({
-      nullifier: '0x' + this.generateRandomHex(64),
-      userIdentifier: '0x' + this.generateRandomHex(64),
+    return {
+      nullifier: '0x' + this.generateRandomHex(32),
+      userIdentifier: '0x' + this.generateRandomHex(32),
       nationality: 'US',
-      documentType: 1,
+      documentType: 1, // E-Passport
       ageAtLeast: 25,
       isOfacMatch: false,
-      attestationId: '0x' + this.generateRandomHex(64),
-      zkProof: '0x' + this.generateRandomHex(128),
+      attestationId: '0x' + this.generateRandomHex(32),
+      proof: '0x' + this.generateRandomHex(64),
       timestamp: Date.now()
-    });
-  }
-
-  /**
-   * Simulate verification flow for development
-   */
-  private static async simulateVerificationFlow(session: any): Promise<void> {
-    // Simulate QR scan delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Simulate app processing
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    // Simulate proof generation
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    };
   }
 
   /**
@@ -383,6 +137,30 @@ export class SelfIntegration {
       console.error('Error processing verification result:', error);
       return null;
     }
+  }
+
+  /**
+   * Create verification session with QR code
+   */
+  static async createVerificationSession(identityData: IdentityData): Promise<{
+    sessionId: string;
+    qrCode: string;
+    qrCodeData: string;
+    expiresAt: Date;
+  }> {
+    const sessionId = 'session_' + this.generateRandomHex(16);
+    const qrData = this.generateQRCode(identityData.configId, identityData.scope);
+    const qrCode = await this.generateQRCode(identityData.configId, identityData.scope, {
+      sessionId,
+      userId: identityData.userId
+    });
+
+    return {
+      sessionId,
+      qrCode,
+      qrCodeData: qrData,
+      expiresAt: new Date(Date.now() + 30 * 60 * 1000) // 30 minutes
+    };
   }
 
   /**

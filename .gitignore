@@ -217,3 +217,8 @@ docker-compose.override.yml
 self-test-data/
 qr-codes/
 test-screenshots/
+
+# Testing infrastructure (contains private keys and deployment artifacts)
+test/
+test-deployment/
+mock-contracts/

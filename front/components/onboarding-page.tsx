@@ -25,7 +25,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useAccount } from 'wagmi'
 import { useRegistration } from '@/hooks/use-registration'
 import { KYCStep } from './kyc-step'
-import { showToast } from '@/components/simple-toast'
 
 type Mode = "create" | "import"
 
@@ -197,7 +196,7 @@ export default function OnboardingPage() {
         <div className="pointer-events-none absolute inset-0 bg-black/10" />
 
         {/* Container */}
-        <div className="w-full max-w-4xl mx-auto px-4 pb-10 relative z-10 pt-20">
+        <div className="w-full max-w-4xl mx-auto px-4 pb-10 relative z-10 pt-24">{/* Changed from pt-8 to pt-24 for navbar clearance */}
           <div className="relative rounded-[32px] overflow-hidden shadow-[0_24px_70px_rgba(0,0,0,0.55)]">
             <div className="absolute inset-0 opacity-45 pointer-events-none bg-[radial-gradient(120%_120%_at_50%_0%,rgba(255,255,255,0.16)_0%,rgba(255,255,255,0.08)_40%,rgba(255,255,255,0.03)_100%)]" />
             <div
@@ -574,27 +573,20 @@ export default function OnboardingPage() {
                     </div>
                     
                     <KYCStep
-                      mode="onboarding"
                       onKYCComplete={(kycData) => {
                         console.log('KYC completed:', kycData);
                         // Store KYC data in state or localStorage
                         localStorage.setItem('kycData', JSON.stringify(kycData));
-                        // Show success toast
-                        showToast?.('success', '🎉 KYC Verification Complete!', 'Your identity has been verified onchain. You can now access all features.');
                         next();
                       }}
                       onKYCError={(error) => {
                         console.error('KYC error:', error);
-                        // Show error toast
-                        showToast?.('error', 'KYC Verification Failed', error);
+                        // Handle KYC error
                       }}
                       onSkip={() => {
                         console.log('KYC skipped');
-                        // Show warning toast
-                        showToast?.('warning', '⚠️ KYC Skipped', 'You can complete KYC verification later in settings.');
                         next();
                       }}
-                      className="w-full"
                     />
                   </Card>
                 )}
