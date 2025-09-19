@@ -42,7 +42,7 @@ class SelfService {
         };
       }
 
-      // Create verification session
+      // Create verification session with enhanced QR code data
       const sessionData = this.selfConfig.createVerificationSession(
         userId,
         walletAddress,
@@ -65,13 +65,20 @@ class SelfService {
       return {
         success: true,
         sessionData: {
-          // Data needed for Self QR code generation
+          // Enhanced data for Self QR code generation
           scope: sessionData.scope,
           configId: sessionData.configId,
           endpoint: sessionData.endpoint,
           userId: walletAddress, // Use wallet address as userId for Self
           requirements: sessionData.requirements,
           sessionId: session.sessionId,
+          // Additional QR code metadata
+          qrCodeType: 'self-verification',
+          version: '1.0',
+          timestamp: Date.now(),
+          // Callback URLs
+          successUrl: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/kyc/success`,
+          errorUrl: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/kyc/error`,
         },
         session,
       };
@@ -92,86 +99,66 @@ class SelfService {
    * @param {string} signature - Webhook signature for verification
    * @returns {Object} Processing result
    */
-  async processVerification(verificationData, signature = null) {
+  async processVerification(verificationData, signature) {
     try {
-      console.log('🔄 Processing Self verification callback...');
+      console.log('🔄 Processing Self verification result');
 
-      // Verify webhook signature if provided
-      if (signature && !this.selfConfig.verifyWebhookSignature(
-        JSON.stringify(verificationData),
-        signature
-      )) {
-        console.error('❌ Invalid webhook signature');
-        return {
-          success: false,
-          error: 'Invalid webhook signature',
-        };
+      // Verify webhook signature if secret is configured
+      if (this.selfConfig.webhookSecret) {
+        const isValidSignature = this.selfConfig.verifyWebhookSignature(
+          JSON.stringify(verificationData),
+          signature
+        );
+
+        if (!isValidSignature) {
+          console.error('❌ Invalid webhook signature');
+          return {
+            success: false,
+            error: 'Invalid webhook signature',
+            details: 'Webhook signature verification failed',
+          };
+        }
       }
 
       // Process verification using Self config
-      const selfResult = await this.selfConfig.processVerificationResult(verificationData);
+      const result = await this.selfConfig.processVerificationResult(verificationData);
 
-      if (!selfResult.success) {
-        console.error('❌ Self proof verification failed:', selfResult.error);
-        return selfResult;
-      }
-
-      const { verificationData: validatedData } = selfResult;
-
-      // Extract wallet address from userContextData or use the userId
-      const walletAddress = verificationData.userContextData?.walletAddress ||
-                           verificationData.userContextData?.userId;
-
-      if (!walletAddress || !this.isValidAddress(walletAddress)) {
+      if (!result.success) {
+        console.error('❌ Self verification processing failed:', result.error);
         return {
           success: false,
-          error: 'Invalid or missing wallet address in verification data',
+          error: result.error,
+          details: result.details,
         };
       }
 
-      console.log(`📋 Verified data for wallet ${walletAddress}:`, {
-        nationality: validatedData.nationality,
-        documentType: validatedData.documentType,
-        ageAtLeast: validatedData.ageAtLeast,
-        isOfacMatch: validatedData.isOfacMatch,
-      });
+      const { verificationData: validatedData } = result;
 
-      // Submit verification to Celo smart contract
-      const onchainResult = await this.celoService.submitKYCVerification({
-        walletAddress,
-        nullifier: validatedData.nullifier,
-        userIdentifier: validatedData.userIdentifier,
-        nationality: validatedData.nationality,
-        documentType: validatedData.documentType,
-        ageAtLeast: validatedData.ageAtLeast,
-        isOfacMatch: validatedData.isOfacMatch,
-        proof: verificationData.proof,
-      });
+      // Submit to blockchain
+      const onchainResult = await this.submitToBlockchain(
+        validatedData,
+        verificationData.userWalletAddress || verificationData.userId
+      );
 
       if (!onchainResult.success) {
-        console.error('❌ Onchain submission failed:', onchainResult.error);
+        console.error('❌ Blockchain submission failed:', onchainResult.error);
         return {
           success: false,
-          error: 'Onchain verification submission failed',
+          error: 'Blockchain submission failed',
           details: onchainResult.error,
         };
       }
 
-      console.log(`✅ Onchain KYC completed for ${walletAddress}`);
-      console.log(`🔗 Transaction: ${onchainResult.transactionHash}`);
+      console.log('✅ Self verification processed successfully');
 
       return {
         success: true,
-        verificationResult: validatedData,
-        onchainResult,
         user: {
-          walletAddress,
-          isVerified: true,
-          verifiedAt: validatedData.timestamp,
-          nationality: validatedData.nationality,
-          documentType: validatedData.documentType,
+          walletAddress: verificationData.userWalletAddress || verificationData.userId,
           transactionHash: onchainResult.transactionHash,
         },
+        verificationResult: validatedData,
+        onchainResult: onchainResult,
       };
 
     } catch (error) {
@@ -185,239 +172,149 @@ class SelfService {
   }
 
   /**
-   * Get onchain KYC status for a wallet address
+   * Submit verification to Celo blockchain
+   * @param {Object} verificationData - Validated verification data
    * @param {string} walletAddress - User's wallet address
-   * @returns {Object} KYC status information
+   * @returns {Object} Blockchain submission result
    */
-  async getOnchainKYCStatus(walletAddress) {
+  async submitToBlockchain(verificationData, walletAddress) {
     try {
-      if (!this.isValidAddress(walletAddress)) {
-        throw new Error('Invalid wallet address');
+      console.log(`🔗 Submitting verification to blockchain for ${walletAddress}`);
+
+      const result = await this.celoService.submitKYCVerification(
+        walletAddress,
+        verificationData.nullifier,
+        verificationData.userIdentifier,
+        verificationData.nationality,
+        verificationData.documentType,
+        verificationData.ageAtLeast,
+        verificationData.isOfacMatch
+      );
+
+      if (!result.success) {
+        throw new Error(result.error);
       }
 
-      console.log(`🔍 Checking KYC status for ${walletAddress}`);
-
-      const onchainStatus = await this.celoService.getKYCStatus(walletAddress);
+      console.log(`✅ Blockchain submission successful: ${result.transactionHash}`);
 
       return {
         success: true,
-        kycData: {
-          isVerified: onchainStatus.isVerified,
-          nationality: onchainStatus.nationality,
-          documentType: onchainStatus.documentType,
-          verifiedAt: onchainStatus.timestamp ? new Date(onchainStatus.timestamp * 1000) : null,
-          isOfacClear: onchainStatus.isOfacClear,
-          verificationCount: onchainStatus.verificationCount || 1,
-          transactionHash: onchainStatus.transactionHash,
-          explorerUrl: onchainStatus.transactionHash ?
-            this.celoConfig.getTransactionUrl(onchainStatus.transactionHash) : null,
-        },
+        transactionHash: result.transactionHash,
+        blockNumber: result.blockNumber,
+        gasUsed: result.gasUsed,
       };
 
     } catch (error) {
-      console.error('❌ Error fetching onchain KYC status:', error);
+      console.error('❌ Blockchain submission error:', error);
       return {
         success: false,
         error: error.message,
+        details: error.stack,
       };
     }
   }
 
   /**
-   * Get verification statistics from the contract
-   * @returns {Object} Verification statistics
-   */
-  async getVerificationStatistics() {
-    try {
-      const stats = await this.celoService.getContractStatistics();
-
-      return {
-        success: true,
-        statistics: {
-          totalVerifications: stats.totalVerifications,
-          uniqueUsers: stats.uniqueUsers,
-          contractAddress: this.celoConfig.contractAddress,
-          network: this.celoConfig.network,
-          explorerUrl: this.celoConfig.getAddressUrl(this.celoConfig.contractAddress),
-        },
-      };
-
-    } catch (error) {
-      console.error('❌ Error fetching verification statistics:', error);
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
-  }
-
-  /**
-   * Validate verification requirements against current configuration
+   * Validate verification requirements
    * @param {Object} requirements - Requirements to validate
    * @returns {Object} Validation result
    */
   validateRequirements(requirements) {
     try {
-      const config = this.selfConfig.getConfiguration();
       const errors = [];
+      const supportedConfig = this.selfConfig.getConfiguration();
 
-      // Check minimum age
-      if (requirements.minimumAge && requirements.minimumAge < config.verificationConfig.minimumAge) {
-        errors.push(`Minimum age cannot be less than ${config.verificationConfig.minimumAge}`);
-      }
-
-      // Check excluded countries
-      if (requirements.allowedCountries) {
-        const conflicting = requirements.allowedCountries.filter(country =>
-          config.verificationConfig.excludedCountries.includes(country.toUpperCase())
-        );
-        if (conflicting.length > 0) {
-          errors.push(`Countries not allowed: ${conflicting.join(', ')}`);
+      // Validate minimum age
+      if (requirements.minimumAge !== undefined) {
+        if (typeof requirements.minimumAge !== 'number' || requirements.minimumAge < 0 || requirements.minimumAge > 120) {
+          errors.push('Invalid minimum age');
         }
       }
 
-      // Check document types
+      // Validate document types
       if (requirements.allowedDocumentTypes) {
-        const invalid = requirements.allowedDocumentTypes.filter(type =>
-          !config.verificationConfig.allowedDocumentTypes.includes(parseInt(type))
-        );
-        if (invalid.length > 0) {
-          errors.push(`Document types not supported: ${invalid.join(', ')}`);
+        if (!Array.isArray(requirements.allowedDocumentTypes)) {
+          errors.push('Document types must be an array');
+        } else {
+          const validTypes = [1, 2, 3]; // E-Passport, EU ID Card, Aadhaar
+          const invalidTypes = requirements.allowedDocumentTypes.filter(type => !validTypes.includes(type));
+          if (invalidTypes.length > 0) {
+            errors.push(`Invalid document types: ${invalidTypes.join(', ')}`);
+          }
+        }
+      }
+
+      // Validate excluded countries
+      if (requirements.excludedCountries) {
+        if (!Array.isArray(requirements.excludedCountries)) {
+          errors.push('Excluded countries must be an array');
         }
       }
 
       return {
         isValid: errors.length === 0,
         errors,
-        supportedConfig: config.verificationConfig,
+        supportedConfig,
       };
 
     } catch (error) {
+      console.error('❌ Requirements validation error:', error);
       return {
         isValid: false,
-        errors: [error.message],
+        errors: ['Validation error'],
+        supportedConfig: this.selfConfig.getConfiguration(),
       };
     }
   }
 
   /**
-   * Get supported document types and their names
-   * @returns {Object} Document type information
+   * Get KYC status for a user
+   * @param {string} walletAddress - User's wallet address
+   * @returns {Object} KYC status
    */
-  getSupportedDocumentTypes() {
-    const config = this.selfConfig.getConfiguration();
-
-    return {
-      allowedTypes: config.verificationConfig.allowedDocumentTypes,
-      typeNames: config.verificationConfig.allowedDocumentTypes.map(type => ({
-        id: type,
-        name: this.selfConfig.getDocumentTypeName(type),
-      })),
-    };
-  }
-
-  /**
-   * Check if a country is excluded from verification
-   * @param {string} countryCode - ISO country code (e.g., 'US', 'CN')
-   * @returns {boolean} Whether the country is excluded
-   */
-  isCountryExcluded(countryCode) {
-    return this.selfConfig.isCountryExcluded(countryCode);
-  }
-
-  /**
-   * Generate a unique session ID
-   * @returns {string} Session ID
-   */
-  generateSessionId() {
-    return `kyc_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-  }
-
-  /**
-   * Validate Ethereum address format
-   * @param {string} address - Address to validate
-   * @returns {boolean} Whether address is valid
-   */
-  isValidAddress(address) {
-    return /^0x[a-fA-F0-9]{40}$/.test(address);
-  }
-
-  /**
-   * Get current Self.xyz configuration
-   * @returns {Object} Current configuration
-   */
-  getCurrentConfiguration() {
-    return this.selfConfig.getConfiguration();
-  }
-
-  /**
-   * Get Celo network information
-   * @returns {Object} Network information
-   */
-  getNetworkInfo() {
-    return this.celoConfig.getNetworkInfo();
-  }
-
-  /**
-   * Health check for all services
-   * @returns {Object} Service health status
-   */
-  async healthCheck() {
+  async getKYCStatus(walletAddress) {
     try {
-      const selfConfig = this.selfConfig.getConfiguration();
-      const networkInfo = this.celoConfig.getNetworkInfo();
-
-      // Test Celo connectivity
-      let celoHealthy = false;
-      try {
-        await this.celoConfig.validateConnection();
-        celoHealthy = true;
-      } catch (error) {
-        console.warn('⚠️  Celo connection issue:', error.message);
-      }
-
-      // Test contract accessibility
-      let contractHealthy = false;
-      try {
-        if (networkInfo.contractAddress) {
-          await this.celoService.getContractStatistics();
-          contractHealthy = true;
-        }
-      } catch (error) {
-        console.warn('⚠️  Contract access issue:', error.message);
-      }
-
-      return {
-        status: 'operational',
-        timestamp: new Date().toISOString(),
-        services: {
-          self: {
-            status: 'operational',
-            scope: selfConfig.scope,
-            endpoint: selfConfig.apiEndpoint,
-            hasWebhookSecret: selfConfig.hasWebhookSecret,
-          },
-          celo: {
-            status: celoHealthy ? 'operational' : 'degraded',
-            network: networkInfo.network,
-            hasWallet: networkInfo.hasWallet,
-            chainId: networkInfo.chainId,
-          },
-          contract: {
-            status: contractHealthy ? 'operational' : 'unavailable',
-            address: networkInfo.contractAddress,
-            deployed: !!networkInfo.contractAddress,
-          },
-        },
-      };
-
+      return await this.celoService.getKYCStatus(walletAddress);
     } catch (error) {
+      console.error('❌ Get KYC status error:', error);
       return {
-        status: 'error',
-        timestamp: new Date().toISOString(),
+        isVerified: false,
         error: error.message,
       };
     }
+  }
+
+  /**
+   * Generate session ID
+   * @returns {string} Unique session ID
+   */
+  generateSessionId() {
+    return 'self_kyc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  }
+
+  /**
+   * Validate wallet address
+   * @param {string} address - Address to validate
+   * @returns {boolean} Is valid address
+   */
+  isValidAddress(address) {
+    try {
+      // Basic Ethereum address validation
+      return /^0x[a-fA-F0-9]{40}$/.test(address);
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Get service configuration
+   * @returns {Object} Service configuration
+   */
+  getConfiguration() {
+    return {
+      self: this.selfConfig.getConfiguration(),
+      celo: this.celoConfig.getConfiguration(),
+    };
   }
 }
 
