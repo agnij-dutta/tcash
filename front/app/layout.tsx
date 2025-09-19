@@ -2,7 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import Navbar from "../components/navbar"
+import dynamic from "next/dynamic"
 // import LiquidEther from "../components/liquid-ether"
 import Providers from "./providers"
 import { ToastContainer } from "../components/simple-toast"
@@ -20,6 +20,21 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  const Navbar = dynamic(() => import("../components/navbar"), {
+    ssr: false,
+    loading: () => (
+      <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-4">
+        <div className="max-w-7xl mx-auto">
+          <div
+            className="backdrop-blur-3xl backdrop-saturate-200 border border-white/15 rounded-2xl px-6 py-3"
+            style={{ background: "rgba(255,255,255,0.06)" }}
+          >
+            <div className="h-8" />
+          </div>
+        </div>
+      </nav>
+    ),
+  })
   return (
     <html lang="en">
       <body className={`${inter.variable} font-sans bg-black text-white tz-metal min-h-screen overflow-x-hidden`}>

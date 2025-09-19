@@ -125,7 +125,7 @@ export default function TsunamiSwap() {
   }
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden flex flex-col items-center pt-24 md:pt-28">
+    <div className="relative min-h-screen w-full overflow-hidden flex flex-col items-center pt-24 md:pt-28 [content-visibility:auto] [contain-intrinsic-size:1400px]">
       {/* Local metallic gradient defs */}
       <svg aria-hidden="true" width="0" height="0" className="absolute">
         <defs>
@@ -171,7 +171,7 @@ export default function TsunamiSwap() {
       </div>
 
       {/* Main Swap Card */}
-      <div className="w-full max-w-6xl mx-auto px-4 pb-10 relative z-10">
+      <div className="w-full max-w-6xl mx-auto px-4 pb-10 relative z-10 [content-visibility:auto] [contain-intrinsic-size:1000px]">
         {/* Glass wrapper with subtle gradient sheen */}
         <div className="relative rounded-[32px] overflow-hidden shadow-[0_24px_70px_rgba(0,0,0,0.55)]">
           <div className="absolute inset-0 opacity-45 pointer-events-none bg-[radial-gradient(120%_120%_at_50%_0%,rgba(255,255,255,0.16)_0%,rgba(255,255,255,0.08)_40%,rgba(255,255,255,0.03)_100%)]" />
@@ -407,7 +407,7 @@ export default function TsunamiSwap() {
 
       {/* Token select modal */}
       {selectingSide && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center [content-visibility:auto] [contain-intrinsic-size:600px]">
           <div className="absolute inset-0 bg-black/50" onClick={() => setSelectingSide(null)} />
           <div
             className="relative w-full max-w-md mx-auto backdrop-blur-3xl border border-white/15 rounded-2xl p-6 shadow-[0_12px_48px_rgba(0,0,0,0.6)] bg-black/60 text-white"
@@ -456,7 +456,7 @@ export default function TsunamiSwap() {
 
       {/* Success modal */}
       {successOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center [content-visibility:auto] [contain-intrinsic-size:500px]">
           <div className="absolute inset-0 bg-black/50" onClick={() => setSuccessOpen(false)} />
           <div
             className="relative w-full max-w-md mx-auto backdrop-blur-3xl border border-white/15 rounded-2xl p-8 text-center shadow-[0_12px_48px_rgba(0,0,0,0.6)] bg-black/60 text-white"

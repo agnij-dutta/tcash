@@ -98,7 +98,7 @@ export default function TsunamiDashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6 relative z-10">
+      <main className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6 relative z-10 [content-visibility:auto] [contain-intrinsic-size:1200px]">
         {/* Quick Actions (Always Visible) */}
         <div className="sticky top-[72px] z-20">
           <div className="grid grid-cols-3 gap-3">
@@ -115,7 +115,7 @@ export default function TsunamiDashboard() {
         </div>
 
         {/* Balances Section */}
-        <section className="backdrop-blur-xl border border-white/15 rounded-2xl p-6 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_16px_56px_rgba(0,0,0,0.45)]" style={{ background: "transparent" }}>
+        <section className="backdrop-blur-xl border border-white/15 rounded-2xl p-6 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_16px_56px_rgba(0,0,0,0.45)] [content-visibility:auto] [contain-intrinsic-size:420px]" style={{ background: "transparent" }}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold bg-gradient-to-b from-white via-zinc-300 to-zinc-500 bg-clip-text text-transparent tracking-tight">Private Balances</h2>
             <button
@@ -173,7 +173,7 @@ export default function TsunamiDashboard() {
         </section>
 
         {/* Compliance */}
-        <div className="grid lg:grid-cols-2 gap-6">
+        <div className="grid lg:grid-cols-2 gap-6 [content-visibility:auto] [contain-intrinsic-size:600px]">
           <div className="space-y-6">
             {/* Compliance & Limits */}
             <section className="backdrop-blur-xl border border-white/15 rounded-2xl p-6 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_16px_56px_rgba(0,0,0,0.45)]" style={{ background: "transparent" }}>

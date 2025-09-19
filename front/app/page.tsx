@@ -1,9 +1,5 @@
-"use client"
-
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
+import dynamic from "next/dynamic"
 import { Card } from "@/components/ui/card"
-import InfiniteHero from "@/components/ui/infinite-hero"
 import {
   Shield,
   Zap,
@@ -19,6 +15,22 @@ import {
   Rocket,
   ArrowLeftRight,
 } from "lucide-react"
+
+// Defer heavy three.js/GSAP hero to the client with a tiny loading shell
+const InfiniteHero = dynamic(() => import("@/components/ui/infinite-hero"), {
+  ssr: false,
+  loading: () => (
+    <div className="relative h-svh w-full overflow-hidden bg-black">
+      <div className="absolute inset-0 bg-[radial-gradient(120%_80%_at_50%_50%,_rgba(255,255,255,0.06)_0%,_transparent_60%)] animate-pulse" />
+      <div className="relative z-10 flex h-svh items-center justify-center px-6">
+        <div className="text-center">
+          <div className="mx-auto h-8 w-64 rounded bg-white/10" />
+          <div className="mx-auto mt-4 h-4 w-80 rounded bg-white/10" />
+        </div>
+      </div>
+    </div>
+  ),
+})
 
 interface LandingProps {
   onNavigate: (page: string) => void
@@ -43,7 +55,7 @@ export default function TZunamiApp() {
       </section>
 
       {/* Features Section */}
-      <section className="relative min-h-screen py-20 px-6">
+      <section className="relative min-h-screen py-20 px-6 [content-visibility:auto] [contain-intrinsic-size:1000px]">
         <div className="absolute inset-0 bg-gradient-to-b from-black via-purple-950/20 to-black" />
 
         <div className="relative z-10 max-w-7xl mx-auto">
@@ -131,7 +143,7 @@ export default function TZunamiApp() {
           </div>
 
           {/* User Flow Section */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 [content-visibility:auto] [contain-intrinsic-size:800px]">
             {[
               {
                 title: "Deposit Flow",
@@ -176,7 +188,7 @@ export default function TZunamiApp() {
       </section>
 
       {/* Stats Section */}
-      <section className="relative py-20 px-6">
+      <section className="relative py-20 px-6 [content-visibility:auto] [contain-intrinsic-size:800px]">
         <div className="absolute inset-0 bg-gradient-to-b from-black via-pink-950/20 to-black" />
 
         <div className="relative z-10 max-w-7xl mx-auto">

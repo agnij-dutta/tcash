@@ -2,8 +2,15 @@
 'use client';
 
 import React from 'react';
-import { KYCStep } from '@/components/kyc-step';
+import dynamic from 'next/dynamic';
 import { useSelfKYC } from '@/lib/sdk';
+
+const KYCStep = dynamic(() => import('@/components/kyc-step').then(m => m.KYCStep), {
+  ssr: false,
+  loading: () => (
+    <div className="h-72 rounded-2xl bg-white/10 animate-pulse" />
+  )
+});
 
 export default function KYCTestPage() {
   const { isVerified, kycData, stats } = useSelfKYC();
@@ -16,7 +23,7 @@ export default function KYCTestPage() {
           <p className="text-white/60">Test the KYC verification functionality</p>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 [content-visibility:auto] [contain-intrinsic-size:800px]">
           {/* KYC Verification Component */}
           <div className="col-span-1">
             <KYCStep
@@ -94,7 +101,7 @@ export default function KYCTestPage() {
         </div>
 
         {/* Instructions */}
-        <div className="mt-8 backdrop-blur-3xl backdrop-saturate-200 border border-blue-500/20 rounded-2xl px-6 py-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_16px_56px_rgba(0,0,0,0.35)]" style={{ background: "rgba(59, 130, 246, 0.06)" }}>
+        <div className="mt-8 backdrop-blur-3xl backdrop-saturate-200 border border-blue-500/20 rounded-2xl px-6 py-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_16px_56px_rgba(0,0,0,0.35)] [content-visibility:auto] [contain-intrinsic-size:400px]" style={{ background: "rgba(59, 130, 246, 0.06)" }}>
           <h3 className="text-lg font-semibold text-blue-300 mb-3">How to Test KYC</h3>
           <div className="space-y-2 text-sm text-blue-200">
             <p>1. Click "Start KYC Verification" to begin the process</p>
