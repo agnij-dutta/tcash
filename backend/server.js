@@ -7,6 +7,7 @@ require('dotenv').config();
 
 // Import routes
 const kycRoutes = require('./routes/kyc');
+const stealthKycRoutes = require('./routes/stealthKyc');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -127,6 +128,10 @@ app.get('/health/detailed', (req, res) => {
 app.use('/api/kyc', kycLimiter);
 app.use('/api/kyc', kycRoutes);
 
+// Apply rate limiting to stealth KYC routes
+app.use('/api/stealth-kyc', kycLimiter);
+app.use('/api/stealth-kyc', stealthKycRoutes);
+
 // API status endpoint
 app.get('/api', (req, res) => {
   res.json({
@@ -137,6 +142,7 @@ app.get('/api', (req, res) => {
     endpoints: {
       health: '/health',
       kyc: '/api/kyc',
+      stealthKyc: '/api/stealth-kyc',
     },
   });
 });

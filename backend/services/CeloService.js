@@ -511,6 +511,49 @@ class CeloService {
       throw error;
     }
   }
+
+  // ========================================
+  // Stealth KYC Contract Methods
+  // ========================================
+
+  /**
+   * Get stealth contract statistics
+   * @returns {Object} Contract statistics
+   */
+  async getStealthContractStatistics() {
+    try {
+      // For now, return mock statistics since we need the stealth contract interface
+      // This will be implemented when stealth contract integration is ready
+      return {
+        totalVerifications: 0,
+        uniqueIdentities: 0,
+        totalStealthAddresses: 0,
+      };
+    } catch (error) {
+      console.error('❌ Error fetching stealth contract statistics:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get KYC status for a stealth address
+   * @param {string} stealthAddress - The stealth address to check
+   * @returns {Object} KYC status data
+   */
+  async getStealthKYCStatus(stealthAddress) {
+    try {
+      // For now, return mock data since we need the stealth contract integration
+      // This will be implemented when stealth contract interface is ready
+      return {
+        success: false,
+        error: 'Stealth address not found',
+        kycData: null,
+      };
+    } catch (error) {
+      console.error('❌ Error fetching stealth KYC status:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = CeloService;

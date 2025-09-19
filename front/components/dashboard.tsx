@@ -2,15 +2,10 @@
 import {
   Shield,
   ArrowUpRight,
-  ArrowDownLeft,
-  RefreshCw,
-  Activity,
   DollarSign,
   Coins,
-  Zap,
   CheckCircle2,
   AlertTriangle,
-  PieChart,
   Wallet,
   ArrowLeftRight,
 } from "lucide-react"
@@ -19,6 +14,8 @@ import type React from "react"
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import LiquidEther from "./liquid-ether"
+import { useEncryptedBalance } from "@/hooks/use-encrypted-balance"
+import { useAccount } from "wagmi"
 
 type TokenRow = {
   symbol: string
@@ -31,34 +28,19 @@ export default function TsunamiDashboard() {
   const router = useRouter()
   const [showBalances, setShowBalances] = useState(true)
   const [hasZkAttestation, setHasZkAttestation] = useState<boolean>(true)
-  const [stealthAddress, setStealthAddress] = useState<string>("0x3a1f2b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f01")
+  const { address } = useAccount()
 
-  const tokens: TokenRow[] = [
-    { symbol: "eUSDC", balance: 1000, usd: 1000, icon: DollarSign },
-    { symbol: "eDAI", balance: 500, usd: 500, icon: Coins },
-    { symbol: "eETH", balance: 0.5, usd: 800, icon: Zap },
-  ]
+  // Live encrypted balance (currently eUSDC)
+  const { decryptedBalance, isLoading } = useEncryptedBalance()
+  const decryptedBalanceNum = useMemo(() => Number(decryptedBalance || 0), [decryptedBalance])
+  const tokens: TokenRow[] = useMemo(() => [
+    { symbol: "eUSDC", balance: decryptedBalanceNum, usd: decryptedBalanceNum, icon: DollarSign },
+  ], [decryptedBalanceNum])
 
-  const totalUsd = useMemo(() => tokens.reduce((sum, t) => sum + t.usd, 0), [])
+  const totalUsd = useMemo(() => tokens.reduce((sum, t) => sum + t.usd, 0), [tokens])
 
-  const recentActivity = [
-    { type: "Deposit", detail: "Deposited 500 USDC → Minted eUSDC", status: "confirmed", time: "2h ago" },
-    { type: "Private Swap", detail: "Swapped 200 eUSDC → 199 eDAI via Uniswap", status: "confirmed", time: "5h ago" },
-    { type: "Withdraw", detail: "Withdrew 100 eDAI (Compliant proof provided)", status: "pending", time: "1d ago" },
-  ] as const
-
-  const obfuscate = (addr: string) => {
-    if (!addr?.startsWith("0x") || addr.length < 6) return "0x***"
-    return `${addr.slice(0, 4)}***${addr.slice(-4)}`
-  }
-
-  const rotateStealth = () => {
-    // simple local rotation simulation
-    const rand = Array.from(crypto.getRandomValues(new Uint8Array(4)))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("")
-    setStealthAddress((prev) => `0x${rand}${prev.slice(10)}`)
-  }
+  // util
+  const obfuscate = (addr?: string) => addr && addr.startsWith("0x") && addr.length > 6 ? `${addr.slice(0,6)}…${addr.slice(-4)}` : "0x…"
 
   const goDeposit = () => router.push("/deposit")
   const goSwap = (prefill?: { from?: string; to?: string }) => {
@@ -69,17 +51,7 @@ export default function TsunamiDashboard() {
   }
   const goWithdraw = () => router.push("/withdraw")
 
-  // Analytics: compute allocation for pie chart
-  const allocations = tokens.map((t) => ({ symbol: t.symbol, value: t.usd }))
-  const totalAlloc = allocations.reduce((s, a) => s + a.value, 0)
-  let cumulative = 0
-  const segments = allocations.map((a, i) => {
-    const start = (cumulative / totalAlloc) * 2 * Math.PI
-    const end = ((cumulative + a.value) / totalAlloc) * 2 * Math.PI
-    cumulative += a.value
-    const colors = ["#8B5CF6", "#EC4899", "#A855F7", "#F472B6", "#9333EA"]
-    return { start, end, color: colors[i % colors.length], label: a.symbol }
-  })
+  // Analytics: removed (no simulations)
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden flex flex-col font-sans">
@@ -117,15 +89,8 @@ export default function TsunamiDashboard() {
                 <Shield className="w-5 h-5 text-black" />
               </div>
               <div className="flex items-center gap-2 text-white/90 text-sm">
-                <span className="hidden xs:inline">Stealth:</span>
-                <span className="font-mono text-white">{obfuscate(stealthAddress)}</span>
-                <button
-                  onClick={rotateStealth}
-                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-white/10 hover:bg-white/15 text-xs text-white/90 border border-white/15"
-                  title="Rotate / generate new stealth address"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" /> Rotate
-                </button>
+                <span className="hidden xs:inline">Wallet:</span>
+                <span className="font-mono text-white">{obfuscate(address)}</span>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -226,53 +191,9 @@ export default function TsunamiDashboard() {
           </div>
         </section>
 
-        {/* Content Grid: Activity | Compliance & Limits | Analytics */}
+        {/* Compliance */}
         <div className="grid lg:grid-cols-5 gap-6">
-          {/* Recent Activity Feed */}
-          <section
-            className="lg:col-span-3 backdrop-blur-xl border border-white/15 rounded-2xl p-6 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_16px_56px_rgba(0,0,0,0.45)]"
-            style={{ background: "transparent" }}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold text-white">Recent Activity</h3>
-              <Activity className="w-4 h-4 text-white/60" />
-            </div>
-            <div className="space-y-4">
-              {recentActivity.map((a, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between py-3 border-b border-white/10 last:border-b-0"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-white/10 border border-white/15 flex items-center justify-center">
-                      {a.type === "Deposit" && <ArrowDownLeft className="w-4 h-4 text-purple-300" />}
-                      {a.type === "Private Swap" && <RefreshCw className="w-4 h-4 text-pink-300" />}
-                      {a.type === "Withdraw" && <ArrowUpRight className="w-4 h-4 text-purple-300" />}
-                    </div>
-                    <div>
-                      <div className="text-white text-sm font-medium">{a.detail}</div>
-                      <div className="text-[11px] text-white/60">{a.type}</div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[11px] text-white/60">{a.time}</div>
-                    <div
-                      className={`text-xs font-medium ${a.status === "confirmed" ? "text-emerald-300" : "text-yellow-200"}`}
-                    >
-                      {a.status === "confirmed" ? "confirmed" : "pending"}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 p-3 rounded-lg bg-white/10 border border-white/15 text-xs text-white/80 flex items-center gap-2">
-              <Shield className="w-3.5 h-3.5" /> Private log. Stored locally only.
-            </div>
-          </section>
-
-          {/* Right Column: Compliance & Analytics */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Compliance & Limits */}
             <section
               className="backdrop-blur-xl border border-white/15 rounded-2xl p-6 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_16px_56px_rgba(0,0,0,0.45)]"
               style={{ background: "transparent" }}
@@ -290,14 +211,13 @@ export default function TsunamiDashboard() {
                 )}
               </div>
               <ul className="space-y-2 text-sm text-white/85">
-                <li>Withdrawals below $5,000 auto-approved.</li>
-                <li>Above $5,000 → zk-attestation required.</li>
+                <li>Status reflects your linked zk-attestation.</li>
               </ul>
               <div className="mt-3 text-sm">
                 {hasZkAttestation ? (
-                  <span className="text-emerald-300">Ready for large withdrawals.</span>
+                  <span className="text-emerald-300">Compliant mode enabled.</span>
                 ) : (
-                  <span className="text-yellow-200">Link zk-attestation to enable large withdrawals.</span>
+                  <span className="text-yellow-200">Link zk-attestation to enable withdrawals.</span>
                 )}
               </div>
               {!hasZkAttestation && (
@@ -310,51 +230,6 @@ export default function TsunamiDashboard() {
                   </button>
                 </div>
               )}
-            </section>
-
-            {/* Analytics (Optional) */}
-            <section
-              className="backdrop-blur-xl border border-white/15 rounded-2xl p-6 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_16px_56px_rgba(0,0,0,0.45)]"
-              style={{ background: "rgba(255,255,255,0.02)" }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-semibold text-white">Analytics</h3>
-                <PieChart className="w-4 h-4 text-white/60" />
-              </div>
-              <div className="grid grid-cols-2 gap-4 items-center">
-                {/* Pie */}
-                <svg viewBox="0 0 32 32" className="w-28 h-28">
-                  <circle cx="16" cy="16" r="16" fill="#14151a" />
-                  {segments.map((s, i) => {
-                    const a0 = (s.start / 100) * 2 * Math.PI
-                    const a1 = (s.end / 100) * 2 * Math.PI
-                    const x0 = 16 + 16 * Math.cos(a0)
-                    const y0 = 16 + 16 * Math.sin(a0)
-                    const x1 = 16 + 16 * Math.cos(a1)
-                    const y1 = 16 + 16 * Math.sin(a1)
-                    const large = s.end - s.start > 50 ? 1 : 0
-                    const d = `M16,16 L${x0},${y0} A16,16 0 ${large} 1 ${x1},${y1} Z`
-                    return <path key={i} d={d} fill={s.color} opacity={0.9} />
-                  })}
-                  {/* donut hole */}
-                  <circle cx="16" cy="16" r="9" fill="#0a0b0e" />
-                </svg>
-                {/* Legend + Summary */}
-                <div>
-                  <div className="space-y-2 text-sm">
-                    {segments.map((s, i) => (
-                      <div key={i} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: s.color }} />
-                          <span className="text-white/80">{s.label}</span>
-                        </div>
-                        <span className="text-white/60">{Math.round(((s.end - s.start) / 100) * 100)}%</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-4 text-xs text-white/60">You swapped $12,400 privately this month</div>
-                </div>
-              </div>
             </section>
           </div>
         </div>

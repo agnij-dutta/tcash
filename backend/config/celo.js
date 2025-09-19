@@ -7,6 +7,7 @@ class CeloConfig {
     this.rpcUrl = this.getRpcUrl();
     this.privateKey = process.env.CELO_PRIVATE_KEY;
     this.contractAddress = this.getContractAddress();
+    this.stealthContractAddress = this.getStealthContractAddress();
 
     // Initialize providers
     this.contractKit = null;
@@ -35,6 +36,18 @@ class CeloConfig {
       case 'mainnet':
       case 'celo':
         return process.env.SELFKYC_CONTRACT_ADDRESS_MAINNET;
+      default:
+        throw new Error(`Unsupported Celo network: ${this.network}`);
+    }
+  }
+
+  getStealthContractAddress() {
+    switch (this.network) {
+      case 'alfajores':
+        return process.env.STEALTH_CONTRACT_ADDRESS_ALFAJORES;
+      case 'mainnet':
+      case 'celo':
+        return process.env.STEALTH_CONTRACT_ADDRESS_MAINNET;
       default:
         throw new Error(`Unsupported Celo network: ${this.network}`);
     }
@@ -89,8 +102,15 @@ class CeloConfig {
       }
 
       if (!this.contractAddress) {
-        console.warn(`⚠️  Warning: Contract address not set for ${this.network} network.`);
-        console.warn('⚠️  Contract interactions will not work until address is configured.');
+        console.warn(`⚠️  Warning: KYC contract address not set for ${this.network} network.`);
+        console.warn('⚠️  KYC contract interactions will not work until address is configured.');
+      }
+
+      if (!this.stealthContractAddress) {
+        console.warn(`⚠️  Warning: Stealth KYC contract address not set for ${this.network} network.`);
+        console.warn('⚠️  Stealth KYC contract interactions will not work until address is configured.');
+      } else {
+        console.log(`🔮 Stealth KYC contract configured: ${this.stealthContractAddress}`);
       }
 
     } catch (error) {
@@ -151,6 +171,7 @@ class CeloConfig {
       rpcUrl: this.rpcUrl,
       explorerUrl: this.getExplorerUrl(),
       contractAddress: this.contractAddress,
+      stealthContractAddress: this.stealthContractAddress,
       hasWallet: !!this.wallet,
       account: this.wallet?.address || null,
     };
@@ -172,6 +193,7 @@ class CeloConfig {
       this.network = network;
       this.rpcUrl = this.getRpcUrl();
       this.contractAddress = this.getContractAddress();
+      this.stealthContractAddress = this.getStealthContractAddress();
       this.initialize();
     }
   }
