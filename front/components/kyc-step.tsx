@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useSelfKYC } from '@/lib/sdk';
 import { CheckCircle, AlertCircle, Loader2, Shield, User, Globe, FileText, KeyRound, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,26 @@ export function KYCStep({
   const [showKYCForm, setShowKYCForm] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
   const [walletAddress, setWalletAddress] = useState('0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6'); // Mock wallet address
+  const [isCheckingStatus, setIsCheckingStatus] = useState(true);
+
+  // Check KYC status when component loads
+  useEffect(() => {
+    const checkKYCStatus = async () => {
+      setIsCheckingStatus(true);
+      try {
+        // The useSelfKYC hook will automatically fetch the verification status
+        // We just need to wait for it to load
+        setTimeout(() => {
+          setIsCheckingStatus(false);
+        }, 2000);
+      } catch (err) {
+        console.error('Error checking KYC status:', err);
+        setIsCheckingStatus(false);
+      }
+    };
+
+    checkKYCStatus();
+  }, []);
 
   const handleVerification = useCallback(async () => {
     if (!proof) {
@@ -106,14 +126,42 @@ export function KYCStep({
     }, 1000);
   }, [generateMockProof]);
 
+  // If we're still checking the status, show loading
+  if (isCheckingStatus || isLoading) {
+    return (
+      <div className={`backdrop-blur-3xl backdrop-saturate-200 border border-white/15 rounded-2xl px-6 py-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_16px_56px_rgba(0,0,0,0.35)] ${className}`} style={{ background: "rgba(255,255,255,0.06)" }}>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+            <Loader2 className="w-5 h-5 text-white animate-spin" />
+          </div>
+          <h2 className="text-xl font-bold text-white">Checking KYC Status...</h2>
+        </div>
+        <div className="text-center py-8">
+          <p className="text-white/70">Please wait while we verify your KYC status...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (isVerified && kycData) {
     return (
       <div className={`backdrop-blur-3xl backdrop-saturate-200 border border-green-500/40 rounded-2xl px-6 py-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_16px_56px_rgba(0,0,0,0.35)] ${className}`} style={{ background: "rgba(34, 197, 94, 0.06)" }}>
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
-            <CheckCircle className="w-5 h-5 text-green-400" />
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+              <CheckCircle className="w-5 h-5 text-green-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-green-400">✅ KYC Verified</h3>
           </div>
-          <h3 className="text-lg font-semibold text-green-400">KYC Verified</h3>
+          <div className="text-xs text-green-300/70 bg-green-500/10 px-2 py-1 rounded-full">
+            Verified {new Date(kycData.timestamp * 1000).toLocaleDateString()}
+          </div>
+        </div>
+        
+        <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+          <p className="text-sm text-green-300 mb-2">
+            🎉 Your identity has been successfully verified! You now have access to all institutional features.
+          </p>
         </div>
         
         <div className="grid grid-cols-2 gap-3">
@@ -127,12 +175,24 @@ export function KYCStep({
           </div>
           <div className="flex items-center gap-2 text-sm text-white/80">
             <Shield className="w-4 h-4 text-white/60" />
-            <span>OFAC Clear: {kycData.isOfacClear ? 'Yes' : 'No'}</span>
+            <span>OFAC Clear: {kycData.isOfacClear ? '✅ Yes' : '❌ No'}</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-white/80">
             <User className="w-4 h-4 text-white/60" />
             <span>Verifications: {kycData.verificationCount}</span>
           </div>
+        </div>
+
+        <div className="mt-4 pt-3 border-t border-green-500/20">
+          <Button
+            onClick={() => {
+              showToast('success', '✅ KYC Complete', 'Proceeding with verified account.');
+              onKYCComplete?.(kycData);
+            }}
+            className="w-full rounded-full bg-green-500/20 border border-green-500/30 text-green-300 hover:bg-green-500/30 px-5 py-3 font-medium"
+          >
+            Continue with Verified Account
+          </Button>
         </div>
       </div>
     );
@@ -140,16 +200,26 @@ export function KYCStep({
 
   return (
     <div className={`backdrop-blur-3xl backdrop-saturate-200 border border-white/15 rounded-2xl px-6 py-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_16px_56px_rgba(0,0,0,0.35)] ${className}`} style={{ background: "rgba(255,255,255,0.06)" }}>
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-          <Shield className="w-5 h-5 text-white" />
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+            <Shield className="w-5 h-5 text-white" />
+          </div>
+          <h2 className="text-xl font-bold text-white">KYC Verification</h2>
         </div>
-        <h2 className="text-xl font-bold text-white">KYC Verification</h2>
+        <div className="text-xs text-orange-300 bg-orange-500/10 px-2 py-1 rounded-full border border-orange-500/20">
+          ⚠️ Not Verified
+        </div>
       </div>
 
       <div className="mb-6">
-        <p className="text-sm text-white/70 mb-4">
-          Complete KYC verification to enable institutional features
+        <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg mb-4">
+          <p className="text-sm text-orange-300">
+            🔐 KYC verification required to access institutional features and higher transaction limits.
+          </p>
+        </div>
+        <p className="text-sm text-white/70">
+          Complete identity verification using Self.xyz to unlock all platform capabilities.
         </p>
       </div>
 
