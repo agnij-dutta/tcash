@@ -217,3 +217,225 @@ docker-compose.override.yml
 self-test-data/
 qr-codes/
 test-screenshots/
+
+# ========================================
+# Additional DeFi & Blockchain Specific
+# ========================================
+
+# Hardhat test artifacts
+contracts/hardhat-test/
+contracts/test-results/
+contracts/coverage/
+contracts/.gas-snapshot
+
+# Ganache/Anvil local blockchain
+.ganache/
+.anvil/
+blockchain-data/
+
+# Wallet files and private keys
+*.wallet
+*.keystore
+private-keys/
+mnemonics.txt
+seed-phrases.txt
+
+# Contract verification files
+contracts/verification/
+contracts/flattened/
+contracts/etherscan-verifications/
+
+# Foundry specific
+contracts/foundry.lock
+contracts/lib/
+contracts/script/Deploy.s.sol
+contracts/script/DeploySelfKYC.s.sol
+
+# ========================================
+# Frontend Specific Additions
+# ========================================
+
+# Next.js specific
+front/.next/
+front/out/
+front/.vercel/
+front/.swc/
+
+# TypeScript build info
+front/.tsbuildinfo
+front/tsconfig.tsbuildinfo
+
+# Storybook
+front/.storybook/
+front/storybook-static/
+
+# ========================================
+# Backend Specific Additions
+# ========================================
+
+# Backend logs and temp files
+backend/logs/
+backend/temp/
+backend/uploads/
+backend/sessions/
+
+# Database dumps and backups
+backend/db-backups/
+backend/mongo-dumps/
+
+# ========================================
+# Development Tools
+# ========================================
+
+# ESLint cache
+.eslintcache
+front/.eslintcache
+backend/.eslintcache
+
+# Prettier cache
+.prettiercache
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Vite cache (if using Vite)
+front/.vite/
+
+# ========================================
+# Security & Sensitive Files
+# ========================================
+
+# API keys and secrets
+api-keys.json
+secrets.json
+config.json
+credentials.json
+
+# JWT secrets
+jwt-secret.txt
+auth-keys/
+
+# Database credentials
+db-config.json
+mongo-uri.txt
+
+# ========================================
+# Testing & Coverage
+# ========================================
+
+# Test artifacts
+test-artifacts/
+coverage-reports/
+test-reports/
+junit.xml
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
+# ========================================
+# Documentation & Notes
+# ========================================
+
+# Personal notes and drafts
+drafts/
+notes/
+personal-notes/
+scratch/
+
+# Meeting notes
+meetings/
+standup-notes/
+
+# ========================================
+# Project Specific Files
+# ========================================
+
+# PowerShell installation scripts
+*.ps1
+foundry-install.ps1
+
+# Temporary documentation files
+APP_RUNNING_GUIDE.md
+FRONTEND_SDK_IMPLEMENTATION_PLAN.md
+
+# Debug components (remove in production)
+wallet-debug.tsx
+debug-components/
+
+# API routes (if they contain sensitive logic)
+front/app/api/kyc/
+front/app/api/auth/
+
+# SDK development files
+front/lib/sdk/README.md
+front/lib/sdk/core/
+
+# ========================================
+# Build and Distribution
+# ========================================
+
+# Distribution files
+dist/
+build/
+out/
+
+# Package manager lock files (keep package-lock.json but ignore others)
+yarn.lock
+pnpm-lock.yaml
+
+# ========================================
+# IDE and Editor Specific
+# ========================================
+
+# VS Code
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ========================================
+# OS Generated Files
+# ========================================
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*

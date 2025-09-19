@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import {
   Shield,
@@ -33,12 +33,13 @@ type PublicToken = {
   name: string
   priceUsd: number
   balance: number
+  decimals: number
 }
 
 const PUBLIC_TOKENS: PublicToken[] = [
-  { symbol: "USDC", name: "USD Coin", priceUsd: 1, balance: 2350 },
-  { symbol: "DAI", name: "DAI Stablecoin", priceUsd: 1, balance: 1840 },
-  { symbol: "ETH", name: "Ethereum", priceUsd: 1600, balance: 1.23 },
+  { symbol: "USDC", name: "USD Coin", priceUsd: 1, balance: 2350, decimals: 6 },
+  { symbol: "DAI", name: "DAI Stablecoin", priceUsd: 1, balance: 1840, decimals: 18 },
+  { symbol: "ETH", name: "Ethereum", priceUsd: 1600, balance: 1.23, decimals: 18 },
 ]
 
 const FIXED_DENOMS = [100, 500, 1000]
@@ -61,26 +62,25 @@ export default function DepositPage() {
   const [confirming, setConfirming] = useState<false | "approve" | "lock">(false)
   const [successOpen, setSuccessOpen] = useState(false)
   const { address } = useAccount()
+  
+  // Token details
+  const faucetAmount = 1000n // 1000 tokens from faucet
+  const decimals = 18
   const {
     balance: publicBalance,
-    faucetAmount,
-    allowance,
-    decimals,
-    checkAllowanceSufficient,
-    handleApproveTokens,
-    isApproving,
-    approveError,
-    isApproveConfirmed,
-    approveHash,
+    canClaim,
+    approveTokens,
+    isPending: isApproving,
+    writeError: approveError,
+    isConfirmed: isApproveConfirmed,
+    hash: approveHash,
   } = useERC20()
 
   const { 
     encryptedBalance,
-    formattedBalance: encryptedFormattedBalance,
-    isLoadingBalance: isLoadingEncryptedBalance,
-    balanceError: encryptedBalanceError,
-    refreshBalance: refreshEncryptedBalance,
-    hasBalance: hasEncryptedBalance
+    formattedEncryptedBalance,
+    isLoading: isLoadingEncryptedBalance,
+    error: encryptedBalanceError,
   } = useEncryptedBalance()
 
   const { data: userPublicKey } = useReadContract({
@@ -92,10 +92,35 @@ export default function DepositPage() {
     query: { enabled: !!address }
   })
 
+  // Read allowance
+  const { data: allowance } = useReadContract({
+    address: ERC20_TEST.address,
+    abi: ERC20_TEST.abi,
+    functionName: 'allowance',
+    args: address ? [address, EERC_CONTRACT.address] : undefined,
+    chainId: avalancheFuji.id,
+    query: { enabled: !!address }
+  })
+
   const { writeContract: depositTokens, data: depositHash, isPending: isDepositPending } = useWriteContract()
   const { isLoading: isDepositConfirming, isSuccess: isDepositConfirmed } = useWaitForTransactionReceipt({ hash: depositHash })
 
-  const hasAllowance = amount ? checkAllowanceSufficient(amount) : false
+  const hasAllowance = useMemo(() => {
+    if (!amount || !allowance) return false
+    const requiredAllowance = parseUnits(amount, selectedToken.decimals)
+    return allowance >= requiredAllowance
+  }, [amount, allowance, selectedToken.decimals])
+
+  const handleApproveTokens = async (amount: string) => {
+    try {
+      setConfirming("approve")
+      const amountBigInt = parseUnits(amount, selectedToken.decimals)
+      await approveTokens(EERC_CONTRACT.address, amountBigInt)
+    } catch (error) {
+      console.error('Error approving tokens:', error)
+      setConfirming(false)
+    }
+  }
 
   async function onConfirmDeposit() {
     if (!hasAllowance) {
@@ -169,10 +194,9 @@ export default function DepositPage() {
   useEffect(() => {
     if (isDepositConfirmed) {
       setSuccessOpen(true)
-      refreshEncryptedBalance()
       setRecent((prev) => [{ label: `${numericAmount} ${selectedToken.symbol} → ${numericAmount} e${selectedToken.symbol}`, status: 'confirmed' }, ...prev.slice(0,4)])
     }
-  }, [isDepositConfirmed, numericAmount, selectedToken.symbol, refreshEncryptedBalance])
+  }, [isDepositConfirmed, numericAmount, selectedToken.symbol])
 
   const stealthAddress = "0xStealth...abcd"
   const receiveLabel = denom

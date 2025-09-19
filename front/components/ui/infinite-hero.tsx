@@ -4,7 +4,7 @@ import { useGSAP } from "@gsap/react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { gsap } from "gsap";
 import { SplitText } from "gsap/SplitText";
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, Suspense, useEffect, useState } from "react";
 import * as THREE from "three";
 
 gsap.registerPlugin(SplitText);
@@ -209,26 +209,39 @@ function ShaderBackground({
 
 	return (
 		<div className={className}>
-			<Canvas className={className}>
-				<ShaderPlane
-					vertexShader={vertexShader}
-					fragmentShader={fragmentShader}
-					uniforms={shaderUniforms}
-				/>
+			<Canvas 
+				className={className}
+				gl={{ antialias: true, alpha: false }}
+				camera={{ position: [0, 0, 1] }}
+			>
+				<Suspense fallback={null}>
+					<ShaderPlane
+						vertexShader={vertexShader}
+						fragmentShader={fragmentShader}
+						uniforms={shaderUniforms}
+					/>
+				</Suspense>
 			</Canvas>
 		</div>
 	);
 }
 
 export default function InfiniteHero() {
+	const [isClient, setIsClient] = useState(false);
 	const rootRef = useRef<HTMLDivElement>(null);
 	const bgRef = useRef<HTMLDivElement>(null);
 	const h1Ref = useRef<HTMLHeadingElement>(null);
 	const pRef = useRef<HTMLParagraphElement>(null);
 	const ctaRef = useRef<HTMLDivElement>(null);
 
+	useEffect(() => {
+		setIsClient(true);
+	}, []);
+
 	useGSAP(
 		() => {
+			if (!h1Ref.current || !pRef.current) return;
+			
 			const ctas = ctaRef.current ? Array.from(ctaRef.current.children) : [];
 
 			const h1Split = new SplitText(h1Ref.current, { type: "lines" });
@@ -281,13 +294,36 @@ export default function InfiniteHero() {
 		{ scope: rootRef },
 	);
 
+	if (!isClient) {
+		return (
+			<div className="relative h-svh w-full overflow-hidden bg-black text-white">
+				<div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-800" />
+				<div className="pointer-events-none absolute inset-0 [background:radial-gradient(120%_80%_at_50%_50%,_transparent_40%,_black_100%)]" />
+				<div className="relative z-10 flex h-svh w-full items-center justify-center px-6">
+					<div className="text-center">
+						<h1 className="mx-auto max-w-2xl lg:max-w-4xl text-[clamp(2.25rem,6vw,4rem)] font-extralight leading-[0.95] tracking-tight bg-gradient-to-b from-white via-zinc-300 to-zinc-500 bg-clip-text text-transparent">
+							The road dissolves in light, the horizon remains unseen.
+						</h1>
+						<p className="mx-auto mt-4 max-w-2xl md:text-balance text-sm/6 md:text-base/7 font-light tracking-tight text-white/70">
+							Minimal structures fade into a vast horizon where presence and
+							absence merge. A quiet tension invites the eye to wander without
+							end.
+						</p>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
 	return (
 		<div
 			ref={rootRef}
 			className="relative h-svh w-full overflow-hidden bg-black text-white"
 		>
 			<div className="absolute inset-0" ref={bgRef}>
-				<ShaderBackground className="h-full w-full" />
+				<div className="h-full w-full bg-gradient-to-br from-gray-900 via-black to-gray-800">
+					<ShaderBackground className="h-full w-full" />
+				</div>
 			</div>
 
 			<div className="pointer-events-none absolute inset-0 [background:radial-gradient(120%_80%_at_50%_50%,_transparent_40%,_black_100%)]" />

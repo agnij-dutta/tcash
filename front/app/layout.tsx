@@ -5,10 +5,8 @@ import "./globals.css"
 import "../components/liquid-ether.css"
 import Navbar from "../components/navbar"
 // import LiquidEther from "../components/liquid-ether"
-import { WagmiProvider } from 'wagmi'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { config } from "../lib/wagmi-config"
 import { Toaster } from "@/components/ui/sonner"
+import ClientProviders from "./providers"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 
@@ -23,12 +21,10 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  const queryClient = new QueryClient()
   return (
     <html lang="en">
       <body className={`${inter.variable} font-sans bg-black text-white tz-metal min-h-screen overflow-x-hidden`}>
-        <WagmiProvider config={config}>
-          <QueryClientProvider client={queryClient}>
+        <ClientProviders>
         {/* Global metallic gradient defs for strokes and text backgrounds */}
         <svg aria-hidden="true" width="0" height="0" className="absolute">
           <defs>
@@ -64,8 +60,7 @@ export default function RootLayout({
         {/* Page content */}
         <div className="relative z-10">{children}</div>
         <Toaster position="top-right" richColors />
-          </QueryClientProvider>
-        </WagmiProvider>
+        </ClientProviders>
       </body>
     </html>
   )

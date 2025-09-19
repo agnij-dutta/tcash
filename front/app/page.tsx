@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import InfiniteHero from "@/components/ui/infinite-hero"
+import SimpleHero from "@/components/ui/simple-hero"
+import WalletDebug from "@/components/wallet-debug"
 import {
   Shield,
   Zap,
@@ -39,7 +40,7 @@ export default function TZunamiApp() {
       </svg>
       {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-center">
-        <InfiniteHero />
+        <SimpleHero />
       </section>
 
       {/* Features Section */}
@@ -208,6 +209,8 @@ export default function TZunamiApp() {
           </div>
         </div>
       </section>
+      
+      <WalletDebug />
     </div>
   )
 }

@@ -24,6 +24,8 @@ import { Progress } from "@/components/ui/progress"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { useAccount } from 'wagmi'
 import { useRegistration } from '@/hooks/use-registration'
+import KYCVerification from '@/components/kyc-verification'
+import { useKYC } from '@/hooks/use-kyc'
 
 type Mode = "create" | "import"
 
@@ -71,6 +73,7 @@ export default function OnboardingPage() {
   const [mode, setMode] = useState<Mode>("create")
   const { address, chain } = useAccount()
   const { register: doRegister, isPending, isPreparingProof, isConfirming, isConfirmed, error, hasProofReady } = useRegistration()
+  const { data: kycData, isLoading: kycLoading, submitKYC } = useKYC()
 
   // Create wallet state
   const [seed, setSeed] = useState<string[]>([])
@@ -102,7 +105,7 @@ export default function OnboardingPage() {
   }, [])
 
   function next() {
-    setStep((s) => Math.min(6, s + 1))
+    setStep((s) => Math.min(7, s + 1))
   }
   function prev() {
     setStep((s) => Math.max(0, s - 1))
@@ -216,12 +219,12 @@ export default function OnboardingPage() {
                   </div>
                   <div className="text-sm font-light tracking-tight bg-gradient-to-b from-white via-zinc-300 to-zinc-500 bg-clip-text text-transparent">Tsunami Onboarding</div>
                 </div>
-                <div className="text-xs text-white/70">Step {step + 1} / 7</div>
+                <div className="text-xs text-white/70">Step {step + 1} / 8</div>
               </div>
 
               {/* Progress */}
               <div className="mt-4">
-                <Progress value={((step + 1) / 7) * 100} className="h-2 bg-white/10" />
+                <Progress value={((step + 1) / 8) * 100} className="h-2 bg-white/10" />
               </div>
 
               {/* Content */}
@@ -558,8 +561,24 @@ export default function OnboardingPage() {
                   </Card>
                 )}
 
-                {/* 6. Feature Highlights */}
-                {step === 5 && (
+                {/* 6. KYC Verification */}
+                {step === 5 && compliance === "institutional" && (
+                  <Card>
+                    <KYCVerification 
+                      onVerificationComplete={(status) => {
+                        if (status.isVerified) {
+                          next()
+                        }
+                      }}
+                      onVerificationError={(error) => {
+                        console.error('KYC verification error:', error)
+                      }}
+                    />
+                  </Card>
+                )}
+
+                {/* 6/7. Feature Highlights */}
+                {step === 5 && compliance === "retail" && (
                   <Card>
                     <div className="text-white/90 text-base font-semibold mb-3">Feature Highlights</div>
                     <div className="grid sm:grid-cols-3 gap-3">
@@ -581,8 +600,31 @@ export default function OnboardingPage() {
                   </Card>
                 )}
 
-                {/* 7. Finish */}
-                {step === 6 && (
+                {/* 7. Feature Highlights (for institutional after KYC) */}
+                {step === 6 && compliance === "institutional" && (
+                  <Card>
+                    <div className="text-white/90 text-base font-semibold mb-3">Feature Highlights</div>
+                    <div className="grid sm:grid-cols-3 gap-3">
+                      {FEATURE_CARDS.map((c, i) => (
+                        <div key={i} className="rounded-xl bg-white/10 border border-white/15 p-4">
+                          <div className="text-white font-semibold">{c.title}</div>
+                          <div className="text-white/70 text-sm mt-1">{c.desc}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-4">
+                      <Button
+                        onClick={next}
+                        className="rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-white/15 px-5"
+                      >
+                        Continue
+                      </Button>
+                    </div>
+                  </Card>
+                )}
+
+                {/* 8. Finish */}
+                {step === 7 && (
                   <Card>
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 rounded-full bg-[#e6ff55] text-[#0a0b0e] flex items-center justify-center">
@@ -629,7 +671,7 @@ export default function OnboardingPage() {
                   <div className="text-white/60 text-xs">You can revisit settings later in the app</div>
                   <Button
                     onClick={next}
-                    disabled={step === 6}
+                    disabled={step === 7}
                     className="rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-white/15 inline-flex items-center gap-2 disabled:opacity-50"
                   >
                     Next <ChevronRight className="w-4 h-4" />
